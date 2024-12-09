@@ -1,1 +1,1 @@
-{"_default":{"1":{"url":"https:\/\/google.com\/","data":"user=^USER^&pass=^PASS^","headers":null,"method":"POST","success":"","fail":401}}}
+{"_default":{"1":{"url":"https:\/\/google.com\/","data":"user=^USER^&pass=^PASS^","headers":null,"method":"POST","success":"","fail":"405"}}}
