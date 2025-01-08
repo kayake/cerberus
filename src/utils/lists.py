@@ -5,8 +5,6 @@ from .loggin import log
 def read_wordlist(path):
     if not path:
         return log.critical("No argument was provided to load the Wordlist")
-    elif not "/" in path:
-        return [path]
     elif not exists(path):
         return log.critical(f"The Wordlist {path} doesn't exists")
     with open(path, 'r') as file:

@@ -47,21 +47,6 @@ formatter = logging.Formatter('%(message)s')
 handler.setFormatter(formatter)
 log.addHandler(handler)
 
-def attempt(attempt, total, username, password, status_code, had_success=False, id="MAIN"):
-    if had_success:
-        success(o, id=id)
-    else:
-        colorize = f"[{THREAD_ID_COLOR}{id}{RESET}] ( {attempt} of {total} ) Login: {BOLD}{Style.BRIGHT}{Fore.LIGHTRED_EX}{username}{RESET} - Password: {BOLD}{Style.BRIGHT}{Fore.RED}{password}{RESET} [ {color_status(status_code)} : {BOLD}{Style.BRIGHT}{Fore.LIGHTRED_EX}FAILED{RESET} ]"
-        print(f"[{Style.BRIGHT}{Fore.BLUE}ATTEMPT{RESET}] {colorize}")
-
-def success(attempt, total, username, password, status_code, id):
-    colorize = f"[{THREAD_ID_COLOR}{id}{RESET}] ( {attempt} of {total} ) Login: {BOLD}{Style.BRIGHT}{Fore.LIGHTGREEN_EX}{username}{RESET} - Password: {BOLD}{Style.BRIGHT}{Fore.LIGHTGREEN_EX}{password}{RESET} [ {color_status(status_code)} : {BOLD}{Style.BRIGHT}{Fore.LIGHTGREEN_EX}SUCCESS{RESET} ]"
-    print(f"[{Style.BRIGHT}{Fore.BLUE}ATTEMPT{RESET}] {colorize}")
-
-def reattempt(attempt, total, username, password, id):
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    print(f"[{TIMESTAMP_STYLE}{timestamp}{RESET}] [{Style.BRIGHT}\033[38;5;214mRE-ATTEMPT{RESET}] [{THREAD_ID_COLOR}{id}{RESET}] ( {attempt} of {total} ) Login - {BOLD}{Style.BRIGHT}{Fore.LIGHTYELLOW_EX}{username}{RESET} - Password {BOLD}{Style.BRIGHT}{Fore.LIGHTYELLOW_EX}{password}{RESET} [ CONNECTION_ERROR : {BOLD}{Style.BRIGHT}{Fore.LIGHTYELLOW_EX}WAITING{RESET} ]")
-
 def tor(message):
     timestamp = datetime.now().strftime("%H:%M:%S")
     print(f"[{TIMESTAMP_STYLE}{timestamp}{RESET}] [{Style.BRIGHT}{BOLD}{Fore.MAGENTA}TOR{RESET}] {message}")
@@ -69,7 +54,5 @@ def tor(message):
 def input_logging(message):
     return input(f"{BOLD}{message}{RESET}")
 
-log.attempt = attempt
 log.tor = tor
-log.reattempt = reattempt
 log.input = input_logging

@@ -1,7 +1,7 @@
 from requests import Session, Request, get
 from stem.control import Controller
 
-from src.Utils.loggin import log
+from src.utils.loggin import log
 from re import search
 from .loggin import Fore, Style, RESET, BOLD
 

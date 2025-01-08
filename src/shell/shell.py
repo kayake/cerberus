@@ -5,10 +5,10 @@ from os.path import join, dirname, exists
 
 from tinydb import Query
 
-from ..Utils.cache import Cache
-from ..Utils.loggin import log
-from ..Utils.database import db
-from src.Utils.attack import Threads
+from ..utils.cache import Cache
+from ..utils.loggin import log
+from ..utils.database import db
+from src.utils.attack import Threads
 
 
 cache = Cache(initial_values={
@@ -61,11 +61,11 @@ def run(args):
     target = None
     if len(args) == 3:
         target = args[2]
-    sure = log.input(f"Username List or Username: {args[0]}\nPassword List or Password: {args[1]}\nTarget - {target} (Optional) (None)\n\n> Are you sure about that? [Y/n] ") or 'y'
+    sure = log.input(f"Username: {args[0]}\nPassword List or Password: {args[1]}\nTarget - {target} (Optional) (None)\n\n> Are you sure about that? [Y/n] ") or 'y'
     if 'y' in sure.lower():
-        Threads(path_username=args[0], path_password=args[1], target=target)
+        Threads(username=args[0], path_password=args[1], target=target)
     else:
-        what_to_change = log.input("Usernames - 2\nPassword - 1\nBoth - 3\n\n> What do you want to change? (1, 2 or 3): ").lower()
+        what_to_change = log.input("Password - 1\nUsernames - 2\nBoth - 3\n\n> What do you want to change? (1, 2 or 3): ").lower()
         if 'p' in what_to_change or '1' in what_to_change:
             value = log.input(f"Password - {args[1]}\n\nNew password payload> ")
             run([args[0], value])
@@ -110,7 +110,8 @@ class Shell:
         exited = True
         while exited:
             command = input("\033[4mcerberus\033[0m > ")
-            self.exec(command)
+            if command:
+                self.exec(command)
 
 
 class Editor:
