@@ -161,3 +161,4 @@ class Threads:
         print("\n")
         for t in self.threads:
             t.join()
+        print()
