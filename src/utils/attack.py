@@ -80,7 +80,7 @@ class Threads:
         log.info(f"Data payload 'data' is '{self.data}'", extra={"bold": True})
 
         self.passwords = read_wordlist(self.path_password)
-        self.total = len(self.passwords) * len(self.username)
+        self.total = len(self.passwords)
 
         if not self.username or not self.passwords:
             return log.critical(f"Password(s) is null or Username is null ({self.username},{self.passwords})")
