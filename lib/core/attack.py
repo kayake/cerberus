@@ -1,9 +1,9 @@
 import sys
-from src.utils.request import request, Tor, test_ip
-from src.utils.loggin import log
-from src.utils.lists import read_header_file, read_wordlist, make_question
-from src.utils.response import check_response
-from src.utils.database import db
+from lib.core.request import request, Tor, test_ip
+from lib.core.loggin import log
+from lib.core.lists import read_header_file, read_wordlist, make_question
+from lib.core.response import check_response
+from lib.core.database import db
 from math import ceil
 from time import sleep, time
 from threading import Thread
