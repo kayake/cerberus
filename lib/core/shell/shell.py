@@ -5,9 +5,9 @@ from os.path import join, dirname, exists
 
 from tinydb import Query
 
-from ..core.cache import Cache
-from ..core.loggin import log
-from ..core.database import db
+from lib.core.cache import Cache
+from lib.core.loggin import log
+from lib.core.database import db
 from lib.core.attack import Threads
 
 

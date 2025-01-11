@@ -1,5 +1,5 @@
 # This is a sample Python script.
-from lib.shell.shell import Shell
+from lib.core.shell.shell import Shell
 # Press Ctrl+F5 to execute it or replace it with your code.
 # Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 

@@ -1,0 +1,11 @@
+tor:
+  port: 9050
+  control_port: 9051
+  password: ~
+  https_tunnel_port: ~
+
+
+proxy:
+  port: 8080
+  password: ~
+
