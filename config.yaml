@@ -5,7 +5,12 @@ tor:
   https_tunnel_port: ~
 
 
+proxy_lists: ~
 proxy:
-  port: 8080
+  host: ~
+  port: ~
   password: ~
+  
 
+timeout: 0
+threads: 5

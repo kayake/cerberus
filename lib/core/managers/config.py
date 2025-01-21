@@ -7,7 +7,7 @@ class ConfigManager:
 
     def load(self, file: str) -> None:
         with open(file, "r") as file:
-            self.config = yaml.load(file)
+            self.config = yaml.load(file, Loader=yaml.FullLoader)
 
     def set(self, key_path: str, new_value: str | int | object) -> None:
         keys = key_path.split(".")
@@ -15,7 +15,7 @@ class ConfigManager:
         for key in keys[:-1]:
             current = current[key]
         
-        current[keys[-1]] = new_value
+        current[keys[:-1]] = new_value
 
         with open(self.file, "w") as file:
             yaml.dump(self.config, file, default_flow_style=False)

@@ -47,12 +47,7 @@ formatter = logging.Formatter('%(message)s')
 handler.setFormatter(formatter)
 log.addHandler(handler)
 
-def tor(message):
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    print(f"[{TIMESTAMP_STYLE}{timestamp}{RESET}] [{Style.BRIGHT}{BOLD}{Fore.MAGENTA}TOR{RESET}] {message}")
-
 def input_logging(message):
     return input(f"{BOLD}{message}{RESET}")
 
-log.tor = tor
 log.input = input_logging

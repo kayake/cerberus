@@ -1,17 +1,28 @@
 import time
 
 class Cache:
-    def __init__(self, __init__, ttl=False, ttl_timeout=0):
+    def __init__(self, __init__=None, ttl=False, ttl_timeout=0):
         self.cache = __init__ or {}
         if ttl:
             time.sleep(ttl_timeout)
             self.cache = {}
+        
+    @property
+    def keys(self) -> list:
+        return list(self.cache.keys())
+    
+    @property
+    def values(self) -> list:
+        return list(self.cache.values())
     
     def set(self, key, value):
         self.cache[key] = value
 
-    def get(self, key):
-        return self.cache[key]
+    def get(self, key:str) -> (str | int | object | list) | None:
+        try:
+            return self.cache[key]
+        except KeyError:
+            return None
     
     def remove(self, key):
         del self.cache[key]
@@ -22,16 +33,3 @@ class Cache:
     def forEach(self, function):
         for key, i in self.cache.items():
             function(key, i)
-
-
-from tinydb import TinyDB
-from os.path import join, dirname
-
-class JSONDataBase:
-    def __init__(self, path = "../Storages/"):
-        self.path = f"{dirname(__file__)}/{path}"
-    
-    def load(self, name):
-        if not name:
-            return
-        db_path = join(self.path, f'{name.lower()}.json')
