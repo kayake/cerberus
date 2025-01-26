@@ -1,2 +1,5 @@
 .idea
 **/__pycache__/
+
+/.cache/logs/.command
+/.cache/saves/test.json

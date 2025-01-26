@@ -39,5 +39,5 @@ class CommandHandler:
                 return command.parser.print_help()
             argument_parsed = command.parser.parse_args(arguments)
             return command.run(argument_parsed)
-        except SystemExit as e:
+        except SystemExit:
             pass

@@ -1,16 +1,17 @@
 tor:
+  protocol: socks5
   port: 9050
   control_port: 9051
   password: ~
-  https_tunnel_port: ~
 
+proxies: ~
 
-proxy_lists: ~
 proxy:
-  host: ~
-  port: ~
-  password: ~
-  
+  address: user:password@host:port
+  protocol: http
 
-timeout: 0
-threads: 5
+# or, if there is not password
+# proxy:
+#   address: host:port
+#   protocol: http
+# the protocol can be Null

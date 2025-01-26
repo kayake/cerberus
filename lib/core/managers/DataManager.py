@@ -1,4 +1,5 @@
 import time
+import json
 
 class Cache:
     def __init__(self, __init__=None, ttl=False, ttl_timeout=0):
@@ -33,3 +34,27 @@ class Cache:
     def forEach(self, function):
         for key, i in self.cache.items():
             function(key, i)
+
+class SaveDataBase:
+    def __init__(self, name):
+        self.file = name
+        self.path = f".cache/saves/{name}.json"
+
+    def read(self) -> object | None:
+        try:
+            with open(self.path, "r") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            return None
+    
+    def write(self, data: any) -> None:
+        with open(self.path, "w") as file:
+            json.dumps(data, file)
+    
+    def update(self, key, value) -> None:
+        data = self.read()
+
+        data[str(key)] = str(value)
+
+        self.write(data)
+
