@@ -1,10 +1,11 @@
-from requests import Session, Request
+from requests import Session, Request, get
 from stem.control import Controller
 from lib.core.loggin import log
 from lib.core.managers.DataManager import SaveDataBase
 from http.client import responses
 import sys
 import random
+import subprocess
 
 
 def check_response(my_response: object | str, response: object):
@@ -65,7 +66,7 @@ class Tor:
 
 
 class Proxy:
-    def _format(line: str) -> object:
+    def _format(self, line: str) -> object:
         splitted_line = line.split(" ")
         proxy = splitted_line[0]
         protocol = splitted_line[1] if len(splitted_line) > 1 else 'http'
@@ -73,20 +74,24 @@ class Proxy:
             'http': f'{protocol}://{proxy}',
             'https': f'{protocol}://{proxy}'
         }
-    
 
+    def test_connection(self, proxy: object):
+        try:
+            get("https://www.torproject.org", proxies=proxy)
+            return True
+        except Exception:
+            return False
+    
 
 class Requester(Proxy):
     methods = ['GET', 'OPTIONS', 'POST', 'PUT', 'DELETE']
-    def __init__(self, url: str, method: str = "POST", headers: object = {}, data: str = None, proxies: list = None):
+    def __init__(self, url: str, method: str = "POST", headers: object = {}, data: str = None):
         self.url = url
         self.method = method
         self.headers = headers
         self.data = data
 
         self.session = Session()
-
-        
 
     def send(self, data: str | int) -> object:
         req = Request(url=self.url, data=data, method=self.method, headers=self.headers)
@@ -99,17 +104,24 @@ class Requester(Proxy):
     def update_tor(self, tor: Tor) -> None:
         return tor.renew_circuit()
 
-    def random_proxy(self):
-        self.update_proxy()
-    
-
     def use_tor(self, protocol: str = "http", port: str | int = 8080) -> None:
-        tor = {
+        tor_proxy = {
             'http': f"{protocol}://127.0.0.1:{port}",
             "https": f"{protocol}://127.0.0.1:{port}"
         }
 
-        self.update_proxy(tor)
+
+        need_to_execute = self.test_connection(tor_proxy)
+        if not need_to_execute:
+            log.debug("Executing Tor")
+            tor = subprocess.Popen(['tor'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            for line in iter(tor.stdout.readline, ''):
+                if 'Done' in line:
+                    break
+            log.info("Tor is ready", extra={"bold": True})
+        log.info("Tor connection working", extra={"bold": True})
+
+        self.update_proxy(tor_proxy)
 
 class Data_Attack(Requester):
     def __init__(self, 
@@ -136,6 +148,7 @@ class Data_Attack(Requester):
         self.timeout = timeout
         self.save = SaveDataBase(url)
         self.resume = resume
+        self.last_save = {}
 
         self.s = None
         self.f = None
@@ -144,11 +157,18 @@ class Data_Attack(Requester):
         
         super().__init__(url=self.url, method=self.method, headers=self.headers, data=self.data)
         if proxy:
-            self.update_proxy(proxy)
+            is_connection_working = self.test_connection(proxy)
+            if is_connection_working:
+                self.update_proxy(proxy)
+            else:
+                log.warning("The proxy server is refusing connections.\n Check the proxy settings to make sure that they are correct.\n Contact your network administrator to make sure the proxy server is working.", extra={"bold": True})
+                n = log.input("Do you want to continue anyway? [N/y]") or 'n'
+                if 'n' in n.lower():
+                    sys.exit(0)
         if tor:
+            self.use_tor(protocol=tor[0], port=tor[1])
             self.tor = Tor(control_port=tor[2])
             self.tor.connect(tor[3])
-            self.use_tor(protocol=tor[0], port=tor[1])
     
     def save_progress(self, thread: int, param: str, current_list: list) -> None:
         index = current_list.index(param)
@@ -185,6 +205,7 @@ class Data_Attack(Requester):
     def bruteforce_username(self, usernames: list, password: str, id: int = 0) -> None:
         list_ = usernames[id] if self.save.read() == None else usernames[id][self.get_save(id)]
         for username in list_:
+            
             result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password),
@@ -194,9 +215,11 @@ class Data_Attack(Requester):
             if result:
                 break
 
+
     def bruteforce_password(self, username: str, passwords: list, id: int = 0):
         list_ = passwords[id] if self.save.read() == None else passwords[id][self.get_save(id)]
         for password in list_:
+           
             result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password),

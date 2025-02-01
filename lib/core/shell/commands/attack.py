@@ -4,13 +4,13 @@ import subprocess
 import ua_generator
 import requests
 from os.path import exists
-from lib.core.managers.bruteforce import Data_Attack
+from lib.core.managers.bruteforce import Data_Attack, Proxy
 from lib.core.managers.config import ConfigManager
 from lib.core.loggin import log
 
-def test_tor_connection():
+def test_tor_connection(proxy, protocol, port):
     try:
-        requests.get("https://www.torproject.org")
+        requests.get("https://www.torproject.org", proxies={'http': f"{protocol}://127.0.0.1:{port}", 'https': f"{protocol}://127.0.0.1:{port}"})
         log.info("Connected to tor", extra={"bold": True})
     except:
         log.debug("Executing Tor")
@@ -69,7 +69,7 @@ class Attack:
         g2.add_argument("--login", "-l", type=str, help="Username account.", metavar="username")
         g2.add_argument("--password", "-p", type=str, help="Password account.", metavar="password")
 
-        g3 = self.parser.add_argument_group(title="Request", description="'Data' options is required to start any attack. All this options are used to customize the request, like adding you own header.")
+        g3 = self.parser.add_argument_group(title="Request", description="'Data' options is required to start any attack. All this options are used to customize the request, like adding your own header.")
         g3.add_argument("--data", "-D", type=str, help="The file of the data (in .txt) or raw to send.", metavar="RAW_OR_FILE", required=True)
         g3.add_argument("--threads", "-T", type=int, help="Define the number of threads you gonna use", metavar="LENGTH", required=False, default=5)
         g3.add_argument("--timeout", "-t", type=int, help="Set a timeout between requests", required=False, metavar="NUMBER", default=0)
@@ -77,13 +77,15 @@ class Attack:
         g3.add_argument("--headers", "-H", type=str, help="The headers file to use.", required=False, metavar="FILE.txt")
         g3.add_argument("--random-agent", '-ra', action="store_true", help="Choose, randomily, an user agent.", required=False)
         g3.add_argument("--tor", action="store_true", default=False, help="Active tor.", required=False)
-        g3.add_argument("--proxy", type=str, help="Use a single proxy", required=False)
-        g3.add_argument("--proxies", type=str, help="Use random proxies", required=False)
+        g3.add_argument("--proxy", action="store_true", help="Use a single proxy", required=False)
+        g3.add_argument("--proxies", action="store_true", help="Use random proxies", required=False)
 
         g4 = self.parser.add_argument_group(title="Output and Configuration File", description="Set a custom configuration and output files.")
         g4.add_argument("--output", "-o", help="Output file when passwords is found.", type=str, required=False)
         g4.add_argument("--config", "-c", default="config.yaml", help="Configuration file (.yaml)", type=str, metavar="config.yaml", required=False)
 
+        g5 = self.parser.add_argument_group(title="Others")
+        g5.add_argument('--ignore', '-I', action="store_true", default=False, required=False, help="Ignore resuming your attack from the last attempt.")
     def attack(self, arguments):
         config = ConfigManager(arguments.config)
         headers = read_header_file(arguments.headers) if arguments.headers else {}
@@ -98,13 +100,12 @@ class Attack:
                    tor_configuration['port'], 
                    tor_configuration['control_port'], 
                    tor_configuration['password']
-                )
-            test_tor_connection()
+                )           
         elif arguments.proxy:
             proxy_configuration = config.get('proxy')
             proxy = f"{proxy_configuration['protocol']}://{proxy_configuration['address']}"
         elif arguments.proxies:
-            proxies = read_wordlist(arguments.proxies)
+            proxies = read_wordlist(config.get('proxies'))
 
         bruteforce = Data_Attack(url=arguments.url, 
                                  data=arguments.data, 
@@ -112,11 +113,15 @@ class Attack:
                                  timeout=arguments.timeout, 
                                  response=arguments.response.split("="), 
                                  method=arguments.method, 
-                                 tor=tor, proxy=proxy, 
-                                 proxies=proxies
+                                 tor=tor, 
+                                 proxy=proxy, 
+                                 proxies=proxies,
+                                 resume=not arguments.ignore
                                 )
 
         print(f"{"-"*30}\nMethod: {arguments.method}\nUrl: {arguments.url}\nBody Payload: {arguments.data}\nHeaders: {arguments.headers}\nTimeout: {arguments.timeout}\nThreads: {arguments.threads}\nResponse: {arguments.response}\nTor: {arguments.tor}\nRandom User-Agent: {arguments.random_agent}\n{"-"*30}")
+       
+       
         if arguments.passwords and arguments.login:
             passwords = read_wordlist(arguments.passwords)
             passwords_grouped = group(arguments.threads, passwords)
@@ -155,6 +160,10 @@ class Attack:
             t.join()
         
         print()
+        self.threads = []
     
     def run(self, arguments):
+        if not arguments:
+            return self.parser.print_help()
+        arguments = self.parser.parse_args(arguments)
         self.attack(arguments=arguments)

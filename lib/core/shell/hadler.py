@@ -19,10 +19,11 @@ class CommandHandler:
                     class_name = filename[:-3].capitalize()
                     command_class = getattr(module, class_name, None)
                     if command_class:
-                        self.commands.set(command_class.name, command_class(self))
+                        command_class = command_class(self)
+                        self.commands.set(command_class.name, command_class)
                         if len(command_class.aliases) != 0:
                             for aliase in command_class.aliases:
-                                self.aliases.set(aliase, command_class(self))
+                                self.aliases.set(aliase, command_class)
                 except Exception as e:
                     log.error(f"(\033[1;35m{filename}\033[0m) => {str(e)}")
     
@@ -35,9 +36,6 @@ class CommandHandler:
             log.debug(f"Command executed: {cmd}")
             return os.system(cmd)
         try:
-            if len(arguments) == 0 and command.name != "help":
-                return command.parser.print_help()
-            argument_parsed = command.parser.parse_args(arguments)
-            return command.run(argument_parsed)
+            return command.run(arguments)
         except SystemExit:
             pass

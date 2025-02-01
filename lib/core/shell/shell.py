@@ -2,6 +2,7 @@ from .hadler import CommandHandler
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory, FileHistory
 from prompt_toolkit.formatted_text import ANSI
+from lib.core.loggin import log
 class Cerberus(CommandHandler):
     def __init__(self, cache: bool = True):
         super().__init__()
@@ -17,7 +18,10 @@ class Cerberus(CommandHandler):
         command = lines[0]
         args = lines[1:]
 
-        self.e(command, args)
+        try:
+            self.e(command, args)
+        except Exception as e:
+            log.error(f"(\033[1;35m{command}\033[0m \033[29m+\033[0m] \033[1;34m{args}\033[0m]) => {str(e)}")
     
     def start(self):
         while True:

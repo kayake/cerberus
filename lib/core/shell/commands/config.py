@@ -21,6 +21,9 @@ class Config:
 
     
     def run(self, arguments):
+        if not arguments:
+            return self.parser.print_help()
+        arguments=self.parser.parse_args(arguments)
         config = ConfigManager(arguments.file)
 
         if arguments.set:

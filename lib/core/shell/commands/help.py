@@ -11,10 +11,14 @@ class Help:
         
     
     def run(self, arguments):
-        if arguments.name:
-            command = self.this.commands.get(arguments.name) or self.this.aliases.get(arguments.name)
-            aliases_string = ", ".join(command.aliases)
-            return print(f"Name: {command.name}\nDescription: {command.description}\nAliases: {aliases_string}")
+        if arguments:
+            arguments = self.parser.parse_args(arguments)
+            if arguments.name:
+                command = self.this.commands.get(arguments.name) or self.this.aliases.get(arguments.name)
+                aliases_string = ", ".join(command.aliases)
+                return print(f"\nName: {command.name}\nDescription: {command.description}\nAliases: {aliases_string}\n")
         else:
+            print()
             for command, value in self.this.commands.cache.items():
                 print(f"{command} - {value.description}")
+            print()

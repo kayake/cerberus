@@ -1,7 +1,10 @@
 from lib.core.shell.shell import Cerberus
-import readline
+from lib.core.loggin import log
 
 if __name__ == '__main__':
-    cerberus = Cerberus()
-    cerberus.start()
+    try:
+        cerberus = Cerberus()
+        cerberus.start()
+    except (KeyboardInterrupt, EOFError):
+        log.error("User aborted")
 
