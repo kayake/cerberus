@@ -116,7 +116,8 @@ class Attack:
                                  tor=tor, 
                                  proxy=proxy, 
                                  proxies=proxies,
-                                 resume=not arguments.ignore
+                                 resume=not arguments.ignore,
+                                 numer_of_threads=arguments.threads
                                 )
 
         print(f"{"-"*30}\nMethod: {arguments.method}\nUrl: {arguments.url}\nBody Payload: {arguments.data}\nHeaders: {arguments.headers}\nTimeout: {arguments.timeout}\nThreads: {arguments.threads}\nResponse: {arguments.response}\nTor: {arguments.tor}\nRandom User-Agent: {arguments.random_agent}\n{"-"*30}")
@@ -152,15 +153,21 @@ class Attack:
         
         else:
             return log.error("Provide at least one wordlist and username/password")
+        bruteforce.running = True
         
-        for t in self.threads:
-             t.start()
+        try:
+            for t in self.threads:
+                t.start()
 
-        for t in self.threads:
-            t.join()
-        
-        print()
-        self.threads = []
+            for t in self.threads:
+                t.join()
+        except (KeyboardInterrupt, EOFError):
+            bruteforce.running = False
+            bruteforce.stop()
+            for t in self.threads:
+                t.join(timeout=1)
+        finally:
+            self.threads = []
     
     def run(self, arguments):
         if not arguments:
