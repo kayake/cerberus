@@ -7,6 +7,7 @@ from os.path import exists
 from lib.core.managers.bruteforce import Data_Attack, Proxy
 from lib.core.managers.config import ConfigManager
 from lib.core.loggin import log
+from pathlib import Path
 
 def test_tor_connection(proxy, protocol, port):
     try:
@@ -85,8 +86,11 @@ class Attack:
         g4.add_argument("--config", "-c", default="config.yaml", help="Configuration file (.yaml)", type=str, metavar="config.yaml", required=False)
 
         g5 = self.parser.add_argument_group(title="Others")
-        g5.add_argument('--ignore', '-I', action="store_true", default=False, required=False, help="Ignore resuming your attack from the last attempt.")
+        g5.add_argument('--ignore', '-I', action="store_true", default=False, required=False, help="Disable checkpoint of your attack.")
     def attack(self, arguments):
+        if not Path(arguments.data).exists():
+            with open(Path(arguments.data), "r") as file:
+                arguments.data = file.read()
         config = ConfigManager(arguments.config)
         headers = read_header_file(arguments.headers) if arguments.headers else {}
         if arguments.random_agent:

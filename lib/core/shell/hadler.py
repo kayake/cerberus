@@ -4,7 +4,8 @@ import os
 from lib.core.managers.DataManager import Cache
 from lib.core.loggin import log
 class CommandHandler:
-    def __init__(self, path="lib.core.shell.commands"):
+    def __init__(self, cache: bool = True, path="lib.core.shell.commands"):
+        self.__cache__ = cache
         self.path = path
         self.commands = Cache()
         self.aliases = Cache()

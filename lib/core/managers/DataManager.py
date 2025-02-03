@@ -21,10 +21,9 @@ class Cache:
         self.cache[key] = value
 
     def get(self, key:str) -> (str | int | object | list) | None:
-        try:
-            return self.cache[key]
-        except KeyError:
+        if not key in self.cache:
             return None
+        return self.cache[key]
     
     def remove(self, key):
         del self.cache[key]

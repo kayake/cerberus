@@ -6,7 +6,8 @@ from lib.core.loggin import log
 from pathlib import Path
 class Cerberus(CommandHandler):
     def __init__(self, cache: bool = True):
-        super().__init__()
+        super().__init__(cache=cache)
+        self.__cache__ = cache
         if not cache:
             self.history = InMemoryHistory()
         else:
