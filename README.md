@@ -106,6 +106,18 @@ ControlPort 9051
 HashedControlPassword <hashed_password>
 ```
 
+### 1.2.2 Configure Tor in .yaml File
+
+```yaml
+tor:
+    protocol: socks5
+    port: 9050
+    control_port: 9051
+    password: my_hashed_password # if there ins't password, leave it null
+```
+
+Now we can use Tor. Use option `--tor` (in attack command).
+
 ## 2 Commands
 
 ### 2.1 Start an Attack
