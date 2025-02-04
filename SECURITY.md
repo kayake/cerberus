@@ -4,13 +4,13 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| > 3.4.x |:white_Check_Mark:  |
+| > 3.4.x |:white_check_mark:  |
 | < 3.4.x |:question:          |
 | < 3.0.x |:x:                 |
 
 | Symbol             |  Meanings          |
 | ------------------ | ------------------ |
-|:white_Check_Mark:  | Works              |
+|:white_check_mark:  | Works              |
 |:question:          | Not tested         |
 | :x:                | Don't work         |
 
