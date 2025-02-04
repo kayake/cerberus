@@ -15,7 +15,7 @@ Unlike [Hydra](https://salsa.debian.org/pkg-security-team/hydra), Cerberus uses 
 
 ### 1.1 Setting up proxies
 
-You have 2 options to set up a proxy: using a shell, or configuring it in a file (config.yaml)
+You have 2 ways to set up a proxy: using a shell, or configuring it in a file (config.yaml)
 
 #### 1.1.1 Using shell
 
