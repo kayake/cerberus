@@ -1,5 +1,9 @@
 # Cerberus
 
+> [!WARNING]
+> THIS PROJECT IS IN BETA. IF THERE ARE ANY BUGS OR PROBLEMS, PLEASE REPORT THEM TO [Issue](https://github.com/kayake/cerberus/issues)
+
+
 A bruteforce HTTP(s) tool, similar to [Hydra](https://salsa.debian.org/pkg-security-team/hydra)
 
 > [!IMPORTANT]
