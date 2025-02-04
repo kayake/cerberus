@@ -1,8 +1,8 @@
 ---
 name: Issue
 about: Describe an issue
-title: ''
-labels: ''
+title: "[ISSUE]"
+labels: issue
 assignees: kayake
 
 ---
@@ -19,4 +19,4 @@ How it happens:
 Screenshot:
 ```
 
--# Your feedback is valuable and contributes to project enhancement.
+# Your feedback is valuable and contributes to project enhancement.
