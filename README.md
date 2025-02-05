@@ -17,6 +17,10 @@ python3 crbs.py
 > [!WARNING]
 > For version compatibility details, please consult the [Security Policy](/SECURITY.md) document.
 
+## Configuration
+
+To enhance anonymity, proxy servers or Tor should be configured. Cerberus simplifies this configuration process, thereby improving overall anonymity.
+
 ### Setting up proxies
 
 Two methods exist for proxy configuration: command-line interface or a configuration file (config.yaml)
