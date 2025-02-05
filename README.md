@@ -68,7 +68,7 @@ user:password@host:port protocol
 
 You can use Tor, but, you need to follow this basics steps:
 
-### 1.2.1 Set up Control Port and Password
+### Set up Control Port and Password
 
 #### On Linux
 
