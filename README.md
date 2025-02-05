@@ -9,15 +9,15 @@ A bruteforce HTTP(s) tool, similar to [Hydra](https://salsa.debian.org/pkg-secur
 > [!IMPORTANT]
 > This project was inspired by [Hydra](https://salsa.debian.org/pkg-security-team/hydra), this project is not a COPY
 
-## 1 How it works?
+## How it works?
 
 Unlike [Hydra](https://salsa.debian.org/pkg-security-team/hydra), Cerberus uses only threads to perform HTTP(s) requests, which makes it slower.
 
-### 1.1 Setting up proxies
+### Setting up proxies
 
 You have 2 ways to set up a proxy: using a shell, or configuring it in a file (config.yaml)
 
-#### 1.1.1 Using shell
+#### Using shell
 
 ```zsh
 cerberus > config --set proxy.address 127.0.0.1:8080
@@ -41,7 +41,7 @@ cerberus > config --set proxies your/proxies_list
 > [!IMPORTANT]
 > The proxy list must follow a structure. ([Proxies List Stucture](#113-proxies-list-structure))
 
-### 1.1.2 Edit .yaml file
+### Edit .yaml file
 
 As mentioned before, you can edit .yaml file, witch is the easiest way, like this:
 
@@ -55,7 +55,7 @@ proxy:
 > [!NOTE]
 > As previously mentioned, you need to follow a structure to set up proxies list
 
-### 1.1.3 Proxies List Structure
+### Proxies List Structure
 
 The proxy list structure must be:
 
@@ -64,13 +64,13 @@ host:port protocol
 user:password@host:port protocol
 ```
 
-## 1.2 Setting up Tor
+## Setting up Tor
 
 You can use Tor, but, you need to follow this basics steps:
 
 ### 1.2.1 Set up Control Port and Password
 
-#### 1.2.1.1 On Linux
+#### On Linux
 
 ```zsh
 ~$ tor --hash-password "<your_plain_text_password>"
@@ -86,7 +86,7 @@ HashedControlPassword <hashed_password>  # Encrypted password (Optional)
 # CookieAuthentication 1  # Optional (cookie-based authentication)
 ```
 
-#### 1.2.1.2 On Windows
+#### On Windows
 
 
 ```zsh
@@ -110,7 +110,7 @@ ControlPort 9051
 HashedControlPassword <hashed_password>
 ```
 
-### 1.2.2 Configure Tor in .yaml File
+### Configure Tor in .yaml File
 
 ```yaml
 tor:
@@ -122,9 +122,9 @@ tor:
 
 Now we can use Tor. Use option `--tor` (in attack command).
 
-## 2 Commands
+## Commands
 
-### 2.1 Start an Attack
+### Start an Attack
 
 ```txt
 cerberus > attack -u https://example.com/ -D user=^USER^&pass=^PASS^ -R 401 -T 6 --tor --random-agent -l admin -P password/list.txt
@@ -135,19 +135,19 @@ cerberus > attack -u https://example.com/ -D user=^USER^&pass=^PASS^ -R 401 -T 6
 
 You can change option `--tor` to `--proxy` or `--proxies`
 
-### 2.2 Plugins
+### Plugins
 
 You can add plugins, that helps you to do another activity or attack. If you want, to add, or create one, create a **SINGLE** file and put it in the folder `lib/plugins/`.
 You need to follow a structure like this:
 
 ```py
-# lib/plugins/test/hellow.world.py
+# lib/plugins/test/hello.world.py
 
 class MyClass:
     description = "My First Plugin!"
     """ A generic Class Name """
     def __init__(self, this):
-        self.this = this # You can get many Shell properties with "this" argument
+        self.this = this # lib/core/shell/handler.py properties
 
     def run(self, arguments):
         print("Hello world!")
@@ -172,11 +172,9 @@ au
 cerberus test(test/hello.world.py) > 
 ```
 
-### 2.3 Help
+### Help
 
 ```zsh
-~$ python3 crbs.py
-
 cerberus > ?
 
 help - It helps you
