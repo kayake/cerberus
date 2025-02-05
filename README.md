@@ -57,7 +57,7 @@ proxy:
 
 ### Proxies List Structure
 
-The proxy list structure must be:
+The proxy list structure must follow this stucture:
 
 ```txt
 host:port protocol
