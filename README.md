@@ -4,18 +4,22 @@
 > THIS PROJECT IS IN BETA. IF THERE ARE ANY BUGS OR PROBLEMS, PLEASE REPORT THEM TO [Issue](https://github.com/kayake/cerberus/issues)
 
 
-A bruteforce HTTP(s) tool, similar to [Hydra](https://salsa.debian.org/pkg-security-team/hydra)
-
+A bruteforce HTTP(s) tool
 > [!IMPORTANT]
 > This project was inspired by [Hydra](https://salsa.debian.org/pkg-security-team/hydra), this project is not a COPY
 
-## How it works?
+## Usage
 
-Unlike [Hydra](https://salsa.debian.org/pkg-security-team/hydra), Cerberus uses only threads to perform HTTP(s) requests, which makes it slower.
+```bash
+python3 crbs.py
+```
+
+> [!WARNING]
+> For version compatibility details, please consult the [Security Policy](/SECURITY.md) document.
 
 ### Setting up proxies
 
-You have 2 ways to set up a proxy: using a shell, or configuring it in a file (config.yaml)
+Two methods exist for proxy configuration: command-line interface or a configuration file (config.yaml)
 
 #### Using shell
 
@@ -24,7 +28,7 @@ cerberus > config --set proxy.address 127.0.0.1:8080
 cerberus > config --set proxy.protocol http
 ```
 
-In the file it should look like this:
+The file should be formatted as follows:
 
 ```yaml
 proxy:
@@ -32,18 +36,18 @@ proxy:
     protocol: http
 ```
 
-In addition, you can create a proxy list and set up it, like this:
+Furthermore, you can generate and configure a proxy list as follows:
 
 ```zsh
 cerberus > config --set proxies your/proxies_list
 ```
 
 > [!IMPORTANT]
-> The proxy list must follow a structure. ([Proxies List Stucture](#proxies-list-structure))
+> The proxy list must follow a structure. [Proxies List Stucture](#proxies-list-structure)
 
 ### Edit .yaml file
 
-As mentioned before, you can edit .yaml file, witch is the easiest way, like this:
+As previously discussed, modifying the .yaml file offers the simplest approach, as follows:
 
 ```yaml
 proxies: my/proxy/list
@@ -53,11 +57,11 @@ proxy:
 ```
 
 > [!NOTE]
-> As previously mentioned, you need to follow a structure to set up proxies list
+> As previously discussed, adherence to a defined structure for proxy list configuration is required.
 
 ### Proxies List Structure
 
-The proxy list structure must follow this stucture:
+The proxy list must adhere to the following structure:
 
 ```txt
 host:port protocol
@@ -66,7 +70,7 @@ user:password@host:port protocol
 
 ## Setting up Tor
 
-You can use Tor, but, you need to follow this basics steps:
+To utilize Tor, adhere to these fundamental steps:
 
 ### Set up Control Port and Password
 
@@ -131,14 +135,13 @@ cerberus > attack -u https://example.com/ -D user=^USER^&pass=^PASS^ -R 401 -T 6
 ```
 
 > [!TIP]
-> If you are using Tor, use few threads.
+> When using Tor, limit the number of threads.
 
-You can change option `--tor` to `--proxy` or `--proxies`
+The `--tor` option may be replaced with `--proxy` or `--proxies`.
 
 ### Plugins
 
-You can add plugins, that helps you to do another activity or attack. If you want, to add, or create one, create a **SINGLE** file and put it in the folder `lib/plugins/`.
-You need to follow a structure like this:
+To extend functionality, plugins may be added.  Should you require a new plugin, please create a single file and place it within the `lib/plugins/` directory. The file must adhere to the following structure:
 
 ```py
 # lib/plugins/test/hello.world.py
@@ -156,7 +159,7 @@ class MyClass:
             print(argument)
 ```
 
-After that, you can execute the plugin
+Subsequently, execute the plugin.
 
 ```zsh
 cerberus > plugin list
