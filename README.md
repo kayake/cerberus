@@ -39,7 +39,7 @@ cerberus > config --set proxies your/proxies_list
 ```
 
 > [!IMPORTANT]
-> The proxy list must follow a structure. ([Proxies List Stucture](#113-proxies-list-structure))
+> The proxy list must follow a structure. ([Proxies List Stucture](#proxies-list-structure))
 
 ### Edit .yaml file
 
