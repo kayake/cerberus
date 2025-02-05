@@ -3,10 +3,10 @@
 > [!WARNING]
 > THIS PROJECT IS IN BETA. IF THERE ARE ANY BUGS OR PROBLEMS, PLEASE REPORT THEM TO [Issue](https://github.com/kayake/cerberus/issues)
 
+This HTTP brute-force tool offers customizable plugin functionality and proxy support, encompassing both standard proxies and Tor. Its user-friendly interface includes a custom terminal, and it features a flexible response check mechanism accepting `Status Code`, `JSON Data`, `Status Text`, and `Full Response Text` as valid responses.
 
-A bruteforce HTTP(s) tool
-> [!IMPORTANT]
-> This project was inspired by [Hydra](https://salsa.debian.org/pkg-security-team/hydra), this project is not a COPY
+> [!NOTE]
+> Significantly, the process verifies the presence of a designated key within the JSON response.
 
 ## Usage
 
