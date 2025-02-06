@@ -1,0 +1,7 @@
+requests
+requests[socks]
+prompt_toolkit
+pyyaml
+stem
+ua_generator
+colorama
