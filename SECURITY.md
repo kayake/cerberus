@@ -4,9 +4,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| > 3.4.x |:white_check_mark:  |
-| < 3.4.x |:question:          |
-| < 3.0.x |:x:                 |
+| >= 3.8.x |:white_check_mark:  |
+| < 3.8.x |:x:                 |
 
 | Symbol             |  Meanings          |
 | ------------------ | ------------------ |
