@@ -11,7 +11,7 @@ Cerberus offers customizable plugin functionality and proxy support, encompassin
 ## Installation
 
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/kayake/cerberus.git && cd cerberus && pip install -r requirements.txt
 ```
 
 > [!NOTE]
