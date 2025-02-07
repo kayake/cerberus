@@ -15,7 +15,10 @@ git clone https://github.com/kayake/cerberus.git && cd cerberus && pip install -
 ```
 
 > [!NOTE]
-> If you are utilizing Kali Linux, please review the documentation [Python package installation failure (Kali Linux)](https://github.com/kayake/cerberus/issues/2).
+> We recommend using `git clone https://github.com/kayake/cerberus.git && cd cerberus && poetry install`.
+
+<sub>
+🅘 If you are utilizing Kali Linux, please review the documentation <a href="https://github.com/kayake/cerberus/issues/2"> Python package installation failure (Kali Linux)</a>.</sub>
 
 ## Usage
 
