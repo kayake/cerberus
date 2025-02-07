@@ -8,6 +8,15 @@ Cerberus offers customizable plugin functionality and proxy support, encompassin
 > [!NOTE]
 > Significantly, the process verifies the presence of a designated key within the JSON response.
 
+## Installation
+
+```bash
+pip install -r requirements.txt
+```
+
+> [!NOTE]
+> If you are utilizing Kali Linux, please review the documentation [Python package installation failure (Kali Linux)](https://github.com/kayake/cerberus/issues/2).
+
 ## Usage
 
 ```bash
