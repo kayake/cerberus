@@ -1,0 +1,17 @@
+[project]
+name = "cerberus"
+version = "0.0.1-beta"
+description = "A user-friendly HTTP(s) brute-forcing tool featuring customizable plugin functionality and support for standard proxies and Tor anonymity network."
+authors = [
+    {name = "kayake",email = "kayake.dev@gmail.com"}
+]
+license = {text = "AGPL-3.0 license"}
+readme = "README.md"
+requires-python = ">= 3.4"
+dependencies = [
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
