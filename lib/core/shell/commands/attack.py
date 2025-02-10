@@ -88,7 +88,7 @@ class Attack:
         g5 = self.parser.add_argument_group(title="Others")
         g5.add_argument('--ignore', '-I', action="store_true", default=False, required=False, help="Disable checkpoint of your attack.")
     def attack(self, arguments):
-        if not Path(arguments.data).exists():
+        if Path(arguments.data).exists():
             with open(Path(arguments.data), "r") as file:
                 arguments.data = file.read()
         config = ConfigManager(arguments.config)
