@@ -139,18 +139,19 @@ class Attack:
         log.info(f"BOLDPayloads were created with successful | __H{self.total}__h payloads")
         log.info("Starting the attack")
         self.sm = asyncio.Semaphore(int(self.config.connection.limit_connections))
-        tasks = [
-            asyncio.create_task(self.send(data=data, i=i))
-            for i, data in enumerate(self.payloads)
-        ]
+        async with aiohttp.ClientSession() as client:
+            tasks = [
+                asyncio.create_task(self.send(data=data, client=client, i=i))
+                for i, data in enumerate(self.payloads)
+            ]
 
-        return await asyncio.gather(*tasks)
+            return await asyncio.gather(*tasks)
 
-    async def send(self, data: str, i: int) -> tuple[str, any]:
+    async def send(self, data: str, client: aiohttp.ClientSession, i: int) -> tuple[str, any]:
         """
         Send a POST request with the given data.
         """
-        async with aiohttp.request(
+        async with client.request(
             url=self.config.body.url, 
             method=self.config.body.method, 
             data=data
