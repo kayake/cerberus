@@ -2,7 +2,7 @@ import aiofiles as aiof
 import logging
 from multiprocessing import Pool
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Any, Coroutine
+from typing import List
 
 log = logging.getLogger(__name__)
 

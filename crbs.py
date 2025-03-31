@@ -6,9 +6,10 @@ from pathlib import Path
 from lib.core import CustomFormatter
 import asyncio
 
+from lib.core import CheckUpdate
+
 """Importing commands"""
 from commands.attack import Attack
-from commands.help import Help
 from commands.plugin import Plugin
 
 handler = logging.StreamHandler()
@@ -20,12 +21,17 @@ LEVELS = {
     "3": logging.DEBUG,
     "4": 4,
     "5": 5,
-    "6":  5,
+    "6": 5,
     "7": 5
 }
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(prog="cerberus", epilog="cerberus --no-cache")
+def check_update():
+    updater: CheckUpdate = CheckUpdate()
+    return updater.update()
+
+
+async def main():
+    parser = argparse.ArgumentParser(prog="cerberus", epilog="cerberus --no-cache --verbose 3 attack")
     
     commands = parser.add_subparsers(dest="command", title="Commands")
 
@@ -44,8 +50,8 @@ if __name__ == "__main__":
     config_group.add_argument("--output", "-o", type=str, help="Output file for found passwords", required=False)
     config_group.add_argument("--ignore", "-I", action="store_true", help="Ignore checkpoints", required=False)
     proccess_group = attack.add_argument_group("Process options")
-    proccess_group.add_argument("--threads", "-T", type=int, help="Enable threads", required=False, default=0)
-    proccess_group.add_argument("--clusters", "-c", type=int, help="Enable clusters", required=False, default=0)
+    proccess_group.add_argument("--threads", "-T", type=int, help="Enable threads", required=False, default=10)
+    proccess_group.add_argument("--clusters", "-c", type=int, help="Enable clusters", required=False, default=5)
 
     plugin = commands.add_parser("plugin", help="Use a plugin in 'lib/plugins/'")
     plugin.add_argument("--load", type=str, help="Load a plugin", required=False)
@@ -60,15 +66,21 @@ if __name__ == "__main__":
     others = parser.add_argument_group("Others")
     others.add_argument("--verbose", "-v", type=str, help="Set debug level", default="2", metavar="LEVEL", required=False)
     arguments= parser.parse_args()
-    print(arguments.command == "attack")
     logging.basicConfig(level=LEVELS[arguments.verbose], handlers=[handler])
 
     log = logging.getLogger("crbs.py")
 
+    version = "unknow"
+
+    try:
+        run_git, current, type = check_update()  # Check for updates in the background
+        version = current
+    except Exception as e:
+        log.error(f"Could not check update: {str(e)}")
+        pass
     if arguments.version:
-        print("Cerberus v1.0.0")
+        print(f"Cerberus {version}")
         sys.exit()
-    
     if arguments.update:
         log.info("Updating Cerberus...")
         os.system("git pull")
@@ -76,10 +88,14 @@ if __name__ == "__main__":
         sys.exit()
     try:
         if arguments.command == "attack":
-            asyncio.run(Attack().run(arguments))
+            await Attack().run(arguments)
         elif arguments.command == "plugin":
-            asyncio.run(Plugin().run(arguments))
+            await Plugin().run(arguments)
     except KeyboardInterrupt:
         log.error("User interrupted.")
 
 
+
+if __name__ == "__main__":
+    log = logging.getLogger("cerberus")
+    asyncio.run(main(), debug=True if log.level == 1 else False)

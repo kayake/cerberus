@@ -1,13 +1,12 @@
 body:
   url: https://google.com/
   method: POST
-  headers:
-    Content-Type: application/json
+  headers: asdf
   data: username=^USER^&password=^PASS^
 
 connection:
   timeout: 50
-  ssl: true
+  verify_ssl: true
   limit_connections: 100
   proxy: http://username:password@127.0.0.1:9273
   proxies: /path/to/proxies.txt
@@ -22,4 +21,4 @@ response:
 
 credentials:
   usernames: admin
-  passwords: /usr/share/dict/brazilian
+  passwords: [/usr/share/dict/brazilian, /usr/share/dict/american-english]

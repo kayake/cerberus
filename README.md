@@ -1,12 +1,20 @@
 # Cerberus
 
-> [!WARNING]
-> THIS PROJECT IS IN BETA. IF THERE ARE ANY BUGS OR PROBLEMS, PLEASE REPORT THEM TO [Issue](https://github.com/kayake/cerberus/issues)
-
-Cerberus offers customizable plugin functionality and proxy support, encompassing both standard proxies and Tor. Its user-friendly interface includes a custom terminal, and it features a flexible response check mechanism accepting `Status Code`, `JSON Data`, `Status Text`, and `Full Response Text` as valid responses.
+Cerberus offers customizable plugin functionality, proxy support, encompassing both standard proxies and Tor and Mutiple Wordlists Attack. Its user-friendly interface, and it features a flexible response check mechanism accepting `Status Code`, `JSON Data`, `Status Text`, and `Full Response Text` as valid responses.
 
 > [!NOTE]
 > Significantly, the process verifies the presence of a designated key within the JSON response.
+
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+    - [Setting Up Proxies and Tor](#setting-up-proxies-and-tor)
+        - [Setting Up on Linux](#on-linux)
+        - [Setting Up on Windows](#on-windows)
+    - [Start an Attack](#starting-an-attack)
+        - [How to use Mutiple Wordlists Attack](#how-to-use-mutiple-wordlist-attack)
+    - [Setting up Plugins](#setting-up-plugins)
+- [Help](#help)
 
 ## Installation
 
@@ -23,7 +31,7 @@ git clone https://github.com/kayake/cerberus.git && cd cerberus && pip install -
 ## Usage
 
 ```bash
-python3 crbs.py
+python3 crbs.py --help
 ```
 
 > [!WARNING]
@@ -33,58 +41,25 @@ python3 crbs.py
 
 To enhance anonymity, proxy servers or Tor should be configured. Cerberus simplifies this configuration process, thereby improving overall anonymity.
 
-### Setting up proxies
+### Setting up Proxies and Tor
 
-Two methods exist for proxy configuration: command-line interface or a configuration file (config.yaml)
-
-#### Using shell
-
-```zsh
-cerberus > config --set proxy.address 127.0.0.1:8080
-cerberus > config --set proxy.protocol http
-```
+Two methods exist for proxy configuration: command-line interface or a configuration file (configs/attack.yaml)
 
 The file should be formatted as follows:
 
 ```yaml
-proxy:
-    address: 127.0.0.1:8080
-    protocol: http
-```
-
-Furthermore, you can generate and configure a proxy list as follows:
-
-```zsh
-cerberus > config --set proxies your/proxies_list
+connection:
+    proxy: http://username:password@127.0.0.1:9273
+    proxies: /path/to/proxies.txt
+    tor:
+        control_port: 9051
+        address: socks5://127.0.0.1:9050
+        password: my_enc_passwordconnection:
+        proxy: 
 ```
 
 > [!IMPORTANT]
-> The proxy list must follow a structure. [Proxies List Stucture](#proxies-list-structure)
-
-### Edit .yaml file
-
-As previously discussed, modifying the .yaml file offers the simplest approach, as follows:
-
-```yaml
-proxies: my/proxy/list
-proxy:
-    address: 127.0.0.1
-    protocol: http
-```
-
-> [!NOTE]
-> As previously discussed, adherence to a defined structure for proxy list configuration is required.
-
-### Proxies List Structure
-
-The proxy list must adhere to the following structure:
-
-```txt
-host:port protocol
-user:password@host:port protocol
-```
-
-## Setting up Tor
+> The tor must be set up, see [Setting up tor](#setting-up-tor) for more informations 
 
 To utilize Tor, adhere to these fundamental steps:
 
@@ -130,34 +105,73 @@ ControlPort 9051
 HashedControlPassword <hashed_password>
 ```
 
-### Configure Tor in .yaml File
-
-```yaml
-tor:
-    protocol: socks5
-    port: 9050
-    control_port: 9051
-    password: my_hashed_password # if there ins't password, leave it null
-```
-
 Now we can use Tor. Use option `--tor` (in attack command).
 
-## Commands
+## Starting an Attack
 
-### Start an Attack
+First of all, you must configure [Config Attack File](/configs/attack.yaml)
 
-```txt
-cerberus > attack -u https://example.com/ -D user=^USER^&pass=^PASS^ -R 401 -T 6 --tor --random-agent -l admin -P password/list.txt
+```yaml
+body:
+  url: https://example.com/login/
+  method: POST
+  headers: asdf
+  data: username=^USER^&password=^PASS^
+
+connection:
+  timeout: 50
+  verify_ssl: true
+  limit_connections: 100
+  proxy: http://username:password@127.0.0.1:9273
+  proxies: /path/to/proxies.txt
+  tor:
+    control_port: 9051
+    address: socks5://127.0.0.1:9050
+    password: my_enc_password
+
+response:
+  success: ~
+  fail: 401
+
+credentials:
+  usernames: admin
+  passwords: /usr/share/dict/brazilian
+```
+
+> [!CAUTION]
+> Do not exceed 100 `limit_connections`. Typically, hardware supports up to 100 simultaneous connections. If you are confident in your hardware's capabilities, you may increase this limit or set it to `0` to remove `AioHTTP` restrictions (**At your own risk**).
+
+After that, you can start the attack by typing:
+
+```zsh
+~ $ cerberus --verbose 3 attack
 ```
 
 > [!TIP]
-> When using Tor, limit the number of threads.
+> Use option `--verbose` so that you can see response status and requests sent
 
 The `--tor` option may be replaced with `--proxy` or `--proxies`.
 
-### Plugins
+### How to use Mutiple Wordlist Attack
 
-To extend functionality, plugins may be added.  Should you require a new plugin, please create a single file and place it within the `lib/plugins/` directory. The file must adhere to the following structure:
+To start a *Mutiple Wordlist Attack* you must transform the wordlist(s) to an array:
+
+```yaml
+# ...
+credentials:
+  usernames: [example.1.txt, example.2.txt]
+  passwords: [/usr/share/dict/brazilian, /usr/share/dict/american-english]
+```
+
+> [!WARNING]
+> Pay attention to the `[]`, Cerberus won't read arguments like this: `example.2.txt, example.1.txt`, it will consider as a single Wordlist.
+
+> [!CAUTION]
+> This feature demands high CPU usage, so **DO NOT** use more than 2 **Wordlists** (Cerberus will warn you when that happens).
+
+## Setting up Plugins
+
+To extend functionality, plugins may be added.  Should you require a new plugin, please create a single file and place it within the `lib/plugins` directory. The file must adhere to the following structure:
 
 ```py
 # lib/plugins/test/hello.world.py
@@ -165,9 +179,6 @@ To extend functionality, plugins may be added.  Should you require a new plugin,
 class MyClass:
     description = "My First Plugin!"
     """ A generic Class Name """
-    def __init__(self, this):
-        self.this = this # lib/core/shell/handler.py properties
-
     def run(self, arguments):
         print("Hello world!")
         """ Getting arguments """
@@ -178,28 +189,41 @@ class MyClass:
 Subsequently, execute the plugin.
 
 ```zsh
-cerberus > plugin list
+cerberus --verbose 3 plugin --list
 ==================================================
 test/hello.world.py - My First Plugin!
 ==================================================
-cerberus > plugin use test/hello.world.py
+cerberus --verbose 3 plugin --use test/hello.world.py
 cerberus test(test/hello.world.py) > a ay au
 Hello world!
 a
 ay
 au
-cerberus test(test/hello.world.py) > 
+cerberus test(test/hello.world.py) >  
 ```
 
-### Help
+## Help
 
 ```zsh
-cerberus > ?
+usage: cerberus [-h] [--version] [--update] [--verbose LEVEL] {attack,plugin} ...
 
-help - It helps you
-attack - Start the bruteforce attack
-plugin - Use any plugins in /lib/plugins/
-config - Configure your configuration file
+options:
+  -h, --help            show this help message and exit
 
-cerberus > 
+Commands:
+  {attack,plugin}
+    attack              Start an attack (Consider executing python3 crbs.py attack -h for attack options)
+    plugin              Use a plugin in 'lib/plugins/'
+
+Version options:
+  --version             Show the version
+
+Update options:
+  --update, -u          Update Cerberus
+
+Others:
+  --verbose LEVEL, -v LEVEL
+                        Set debug level
+
+cerberus --no-cache --verbose 3 --attack
 ```

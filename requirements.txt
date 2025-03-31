@@ -1,7 +1,11 @@
-requests
-requests[socks]
-prompt_toolkit
+aiohttp
+aiofiles
 pyyaml
+uvloop
+asyncio
 stem
 ua_generator
-colorama
+packaging
+logging
+pathlib
+argparse

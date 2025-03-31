@@ -1,10 +1,15 @@
 import json
 import logging
+import subprocess
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Tuple
+
 
 import yaml
-from aiohttp import ClientResponse, TraceConfig
+from aiohttp import ClientResponse
+from packaging.version import parse, Version
+
+REPO_URL = "https://github.com/kayake/cerberus"
 
 # Configure logging with colors and custom time format
 class CustomFormatter(logging.Formatter):
@@ -123,6 +128,8 @@ class CustomFormatter(logging.Formatter):
         record.asctime = self.formatTime(record, "%H:%M:%S")
         return f"[{self.COLORS.get("DARK_CYAN")}{record.asctime}{self.RESET}] - {record.name} - {record.levelname} - {record.msg.replace("BOLD", "").replace("__H", self.COLORS.get("MAGENTA")).replace("__h", self.RESET)}"
 
+log = logging.getLogger(__name__)
+
 class ReadYAMLFile:
     def __init__(self, file_path: str):
         """
@@ -235,28 +242,250 @@ async def verify_response(expected_response: Any, response: ClientResponse) -> b
 
     return False
 
-class Saver:
+class HeadersReader:
+    def __init__(self, headers_path: str):
+        """
+        Initialize the HeadersReader instance by reading the headers file.
+        
+        :param headers_path: Path to the headers file.
+        """
+        self.headers_path = Path.cwd() / headers_path
+        if not self.headers_path.exists():
+            log.warning(f"Headers file not found: {self.headers_path}")
+    
+    def __read_headers(self) -> Dict[str, str]:
+        """
+        Read the headers from the file.
+        
+        :return: Parsed headers as a dictionary.
+        """
+        headers = {}
+        with open(self.headers_path, "r") as file:
+            headers = yaml.load(file)
+        return headers
+
+    @property
+    def headers(self) -> Dict[str, str]:
+        """
+        Get the headers from the file.
+        
+        :return: Headers as a dictionary.
+        """
+        if not self.headers_path.exists():
+            return {}
+        try:
+            headers = self.__read_headers()
+            return headers
+        except Exception as e:
+            log.debug(f"Failed to read headers: {e}")
+            return {}
+    
+class CheckUpdate:
     def __init__(self):
         """
-        Initialize the Saver instance.
+        Initialize the CheckUpdate instance.
         """
         self.file = None
 
-    def save(self, name: str, data: str) -> None:
-        """
-        Save data to a file in the .cache/saves directory.
+    def run_git(self, cmd: str) -> str | Tuple[None, str]:
+        try:
+            result = subprocess.run(
+                ['git'] + cmd.split(), 
+                capture_output=True,
+                check=True,
+                text=True, 
+            )
+            return result.stdout.strip()
+        except subprocess.CalledProcessError as e:
+            log.debug(f"Command '{cmd}' failed with error: {e.stderr.strip()}")
+            return None
         
-        :param name: Name of the file.
-        :param data: Data to save.
+    def current_version(self) -> Tuple[Version, str]:
         """
-        self.file = Path.cwd() / f".cache/saves/{name}"
-        self.file.parent.mkdir(parents=True, exist_ok=True)
-        self.file.write_text(data)
+        Get the current version of Cerberus.
+        
+        :return: Current version of Cerberus.
+        """
+        current_tag = self.run_git("describe --tags --exact-match HEAD")
+        if current_tag:
+            return parse(current_tag), "stable"
     
-class TraceConfig:
-    def __init__(self):
-        self.trace_config = TraceConfig()
-        self.trace_config.on_request_start.append(self.on_request_start)
-        self.trace_config.on_request_end.append(self.on_request_end)
+        # check if user is using dev branch
+        current_tag_aprox: Version = parse(self.run_git("describe --tags --abbrev=0"))
+        current_branch = self.run_git("rev-parse --abbrev-ref HEAD")
+        if current_branch == "dev":
+            commit_hash = self.run_git("rev-parse --short HEAD")
+            return parse(f"{current_tag_aprox.major}.{current_tag_aprox.minor}.dev{current_tag_aprox.micro}+{commit_hash}"), "dev"
+        
+        return "Custom", "custom"
+
+    def check_update_priority(self) -> int:
+        """
+        Check the priority of the update.
+        
+        :return: Priority of the update.
+        """
+        current, type = self.current_version()
+        self.run_git(f"config --local --add cerberus.lastVersion {current}")
+        if type == "dev":
+            _, last_dev_tag = self.fetch_dev_status()
+            if not last_dev_tag:
+                return 4
+            return 3
+        
+        _, last_stable_tag = self.fetch_stable_status()
+        if not last_stable_tag:
+            return 0
+        
+        latest = parse(last_stable_tag)
+
+        if current.major < latest.major:
+            return 2
+        
+        if (current.minor, current.micro) < (latest.minor, latest.micro):
+            return 1
+        
+        return 0
     
+
+    def fetch_dev_status(self) -> Tuple[bool, str]:
+        """
+        Fetch the development status of Cerberus.
+        
+        :return: True if the development status is "dev", False otherwise.
+        """
+        dev_tag = self.run_git("fetch --tags origin dev")
+        if not dev_tag:
+            self.run_git("fetch origin dev")
+        dev_commit = self.run_git("rev-parse origin/dev")
+        current_commit = self.run_git("rev-parse HEAD")
+        return dev_commit != current_commit, dev_tag
+
+    def fetch_stable_status(self) -> Tuple[bool, str]:
+        """
+        Fetch the stable status of Cerberus.
+        
+        :return: True if the stable status is "stable", False otherwise.
+        """
+        stable_tag = self.run_git("fetch --tags origin master")
+        stable_commit = self.run_git("rev-parse origin/master")
+        current_commit = self.run_git("rev-parse HEAD")
+        return stable_commit != current_commit, stable_tag
     
+    def generate_changelog(self, old_version: str, new_version: str) -> str:
+        """
+        Generate a changelog between two versions.
+        
+        :param old_version: Old version of Cerberus.
+        :param new_version: New version of Cerberus.
+        :return: Changelog as a string.
+        """
+        current_branch = self.run_git("rev-parse --abbrev-ref HEAD")
+        commits = self.run_git(f"log --pretty=format:%h||%s||%b {old_version}..{new_version}")
+        if not commits:
+            return "No changes found."
+        changes = []
+        for commit in commits.split("\n"):
+            commit_hash, subject, body = commit.split("||", 2)
+            changes.append(f"[{commit_hash}]({REPO_URL}/{current_branch}/commits/{hash}): {subject}\n{body}")
+        if not changes:
+            return "No changes found."
+        # Format the changelog
+        changes = [f"- {change}" for change in changes]
+        changes = "\n".join(changes)
+        # Add the version numbers
+        changes = changes.replace(old_version, f"**{old_version}**")
+        changes = changes.replace(new_version, f"**{new_version}**")
+        # Generate changelog
+        return f"Changelog from {old_version} to {new_version}:\n" + "\n".join(changes)
+
+    def perform_update(self, dev: bool = False) -> None:
+        """
+        Perform the update of Cerberus.
+        
+        :param dev: If True, update to the development version.
+        """
+        if dev:
+            self.run_git("checkout dev")
+            self.run_git("pull origin dev")
+        else:
+            self.run_git("pull origin master")
+
+    def handle_update(self, grade: int) -> Tuple[str]:
+        """
+        Handle the update status and return a formatted message.
+        
+        :param grade: Grade of the update.
+        :return: Formatted message and grade.
+        """
+        colors = {
+            0: "\033[92m",
+            1: "\033[38;5;214m",
+            2: "\033[91m",
+            3: "\033[94m",
+            4: "\033[94m"
+        }
+
+        messages = {
+            0: "latest",
+            1: "stable",
+            2: "outdated",
+            3: "dev",
+            4: "dev"
+        }
+
+        if grade == -1:
+            return "\033[91mFailed to check for updates.\033[0m", grade
+
+        return f"{colors[grade]}{messages.get(grade, 'NOT_DETECTED')}\033[0m", grade
+
+    def update(self) -> Tuple[any, str, str]:
+        """
+        Update the Cerberus repository.
+        """
+        log.info("Checking for updates and version")
+        update_dev, dev = self.fetch_dev_status()
+        update_master, stable = self.fetch_stable_status()
+        current, type = self.current_version()
+        grade = self.check_update_priority()
+        log.info(f"BOLDVersion: {current} ({self.handle_update(grade)[0]})")
+        if grade == 0:
+            return None
+        if grade == 1:
+            if update_master:
+                log.warning(f"Update available ({stable})")
+                y = input(f"Do you want to update to the latest stable version? (y/n): ")
+                if "y" in y.lower():
+                    log.info("Updating to the latest stable version...")
+                    self.perform_update()
+                    log.info("BOLDUpdate complete!")
+                return None
+            elif update_dev:
+                log.warning(f"Update available ({dev})")
+                y = input(f"Do you want to update to the latest dev version? (y/n): ")
+                if "y" in y.lower():
+                    log.info("Updating to the latest dev version...")
+                    self.perform_update(dev=True)
+                    log.info("BOLDUpdate complete!")
+            else:
+                log.info("Already on the latest version.")
+        if grade == 2:
+            if update_master:
+                log.warning(f"Update available ({stable})")
+                log.info("Updating to the latest stable version...")
+                self.perform_update()
+                log.info("BOLDUpdate complete!")
+            if update_dev:
+                log.warning(f"Update available ({dev})")
+                log.info("Updating to the latest dev version...")
+                self.perform_update(dev=True)
+                log.info("BOLDUpdate complete!")
+
+        if update_dev or update_master and grade != 4:
+            changelog = self.generate_changelog(current, stable)
+            print(f"Changelog:\n{changelog}")
+            self.run_git("config --local --add cerberus.lastVersion {stable}")
+            if type == "dev":
+                self.run_git("config --local --add cerberus.lastVersion {dev}")
+            
+        return self.run_git, current, type
