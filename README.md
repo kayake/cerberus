@@ -15,6 +15,8 @@ Cerberus offers customizable plugin functionality, proxy support, encompassing b
         - [How to use Mutiple Wordlists Attack](#how-to-use-mutiple-wordlist-attack)
     - [Setting up Plugins](#setting-up-plugins)
 - [Help](#help)
+- [Disclaimer](/DISCLAIMER.md)
+- [Contribuiting](/CONTRIBUTING.md)
 
 ## Installation
 
