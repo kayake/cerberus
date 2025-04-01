@@ -4,3 +4,4 @@
 .cache/logs/.command
 .cache/saves/test.json
 poetry.lock
+configs/attack.yaml
