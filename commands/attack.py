@@ -14,11 +14,18 @@ class Attack:
 
         if int(config.connection.limit_connections) > 100:
             log.warning("BOLDYou are using a high number of connections, it may cause issues with the target server and overload your CPU. (max recommended is 100)")
+            yn = input("\033[1mDo you want to continue? [N/y] \033[0m") or "n"
+            if yn.lower() != "y":
+                return None
+            
 
         if isinstance(config.credentials.usernames, list) or isinstance(config.credentials.passwords, list):
             log.info("Using multiple wordlists")
-            if len(config.credentials.usernames) > 10 or len(config.credentials.passwords) > 10:
-                log.warning("BOLDYou are using a high number of wordlists, it may overload your CPU. (max recommended is 10)")
+            if isinstance(config.credentials.username, list) and len(config.credentials.usernames) > 2 or isinstance(config.credentials.passwords, list) and len(config.credentials.passwords) > 2:
+                log.warning("BOLDYou are using a high number of wordlists, it may overload your CPU. (max recommended is 2)")
+                yn = input("\033[1mDo you want to continue? [N/y] \033[0m") or "n"
+                if yn.lower() != "y":
+                    return None
             bruteforce_with_mutiple_wordlists = MultipleWordlists(
                 config,
                 arguments.clusters,

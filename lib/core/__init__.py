@@ -454,7 +454,7 @@ class CheckUpdate:
         if grade == 1:
             if update_master:
                 log.warning(f"Update available ({stable})")
-                y = input(f"Do you want to update to the latest stable version? (y/n): ")
+                y = input(f"\033[1mDo you want to update to the latest stable version? [Y/n] \033[0m").lower() or "y"
                 if "y" in y.lower():
                     log.info("Updating to the latest stable version...")
                     self.perform_update()
@@ -462,7 +462,7 @@ class CheckUpdate:
                 return None
             elif update_dev:
                 log.warning(f"Update available ({dev})")
-                y = input(f"Do you want to update to the latest dev version? (y/n): ")
+                y = input(f"\033[1mDo you want to update to the latest dev version? [Y/n] \033[0m").lower() or "y"
                 if "y" in y.lower():
                     log.info("Updating to the latest dev version...")
                     self.perform_update(dev=True)
