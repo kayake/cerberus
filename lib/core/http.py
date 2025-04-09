@@ -120,7 +120,7 @@ class Attack:
         Test the connection with the proxy.
         """
         try:
-            self.session.get("https://torproject.org", proxy=self.proxy)
+            aiohttp.get("https://torproject.org", proxy=self.proxy)
             log.info("BOLDThe connection with the proxy was successful")
         except Exception as e:
             log.critical(f"The proxy server is refusing connections.\nCheck the proxy settings to make sure that they are correct.\nContact your network administrator to make sure the proxy server is working;\n\n{e}")
