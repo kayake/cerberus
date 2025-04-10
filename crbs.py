@@ -31,7 +31,7 @@ def check_update():
 
 
 async def main():
-    parser = argparse.ArgumentParser(prog="cerberus", epilog="cerberus --no-cache --verbose 3 attack")
+    parser = argparse.ArgumentParser(prog="cerberus", epilog="cerberus --verbose 3 attack -h")
     
     commands = parser.add_subparsers(dest="command", title="Commands")
 
