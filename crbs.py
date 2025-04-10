@@ -73,8 +73,7 @@ async def main():
     version = "unknow"
 
     try:
-        run_git, current, type = check_update()  # Check for updates in the background
-        version = current
+        run_git, version, type = check_update()  # Check for updates in the background
     except Exception as e:
         log.error(f"Could not check update: {str(e)}")
         pass
@@ -97,5 +96,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    log = logging.getLogger("cerberus")
-    asyncio.run(main(), debug=True if log.level == 1 else False)
+    asyncio.run(main())

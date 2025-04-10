@@ -258,5 +258,5 @@ Others:
     --verbose LEVEL, -v LEVEL
                                                 Set debug level
 
-cerberus --verbose 3 --attack
+cerberus --verbose 3 --attack -h
 ```
