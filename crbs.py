@@ -44,8 +44,7 @@ if __name__ == "__main__":
     commands = parser.add_subparsers(dest="command", title="Commands")
 
     attack = commands.add_parser("attack", help="Start an attack (Consider executing python3 crbs.py attack -h for attack options)")
-    mode = attack.add_argument_group("Attack mode")
-    mode.add_argument("--mutiple-sites", help="Start attack for mutiple URLS", action="store_true", required=False)
+    # mode = attack.add_argument_group("Attack mode")
     request_group = attack.add_argument_group("Request options")
     request_group.add_argument("--tor", "-t", action="store_true", help="Use Tor", required=False)
     request_group.add_argument("--proxy", "-p", action="store_true", help="Use a proxy", required=False)

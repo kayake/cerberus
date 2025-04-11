@@ -36,6 +36,14 @@ class Attack:
         if not config.credentials.usernames and not config.credentials.passwords:
             log.error("No usernames or passwords provided.")
             return None
+        if not config.response:
+            log.error("No response provided.")
+            return None
+        if not config.response.success and not config.response.failure:
+            log.error("No success or failure response provided. Provide at least one of them.")
+            return None
+        if config.response.success and config.response.failure:
+            log.warning("BOLDYou provided both success and failure responses. This may cause issues.")
 
         if arguments.proxy and config.connection.proxy or config.connection.proxies or config.connection.tor:
             log.info("Testing proxy connection...")

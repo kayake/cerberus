@@ -8,7 +8,7 @@ import logging
 from multiprocessing import Process
 from stem.control import Controller
 from stem import SocketError
-from typing import Any, List, Optional, Union
+from typing import Any, List, Optional
 from . import verify_response, HeadersReader
 from .process import PreProcessing
 
@@ -17,27 +17,6 @@ log = logging.getLogger(__name__)
 # Set the event loop policy to uvloop for better performance.
 uvloop.install()
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-
-class Proxy:
-    """
-    Class to manage the proxy.
-    """
-    def __init__(self, config: Any):
-        self.proxy: Union[List[str], str, None] = config.connections.proxies or config.connections.proxy
-
-    def get(self) -> Optional[str]:
-        """
-        Get a random proxy from the list.
-        """
-        if isinstance(self.proxy, list):
-            return random.choice(self.proxy)
-        return self.proxy
-
-    def set(self, value: str) -> None:
-        """
-        Set a new proxy.
-        """
-        self.proxy = value
 
 class Tor:
     """

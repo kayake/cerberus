@@ -173,9 +173,7 @@ class ReadYAMLFile:
         :param name: Attribute name.
         :return: Attribute value.
         """
-        if name not in self._data:
-            self._data[name] = self.__wrap__({})
-        return self._data[name]
+        return self._data.get(name, None)
 
     def __setattr__(self, name: str, value: Any) -> None:
         """
@@ -196,7 +194,7 @@ class ReadYAMLFile:
         :param key: Key name.
         :return: Value associated with the key.
         """
-        return self._data[key]
+        return self._data.get(key, None)
 
     def __setitem__(self, key: str, value: Any) -> None:
         """
