@@ -3,6 +3,7 @@ from lib.core import ReadYAMLFile
 
 import aiohttp
 import aiofiles as aiof
+import asyncio
 
 import logging
 import random
@@ -39,19 +40,21 @@ class Attack:
         if not config.response:
             log.error("No response provided.")
             return None
-        if not config.response.success and not config.response.failure:
+        if not config.response.success and not config.response.fail:
             log.error("No success or failure response provided. Provide at least one of them.")
             return None
-        if config.response.success and config.response.failure:
+        if config.response.success and config.response.fail:
             log.warning("BOLDYou provided both success and failure responses. This may cause issues.")
 
-        if arguments.proxy and config.connection.proxy or config.connection.proxies or config.connection.tor:
-            log.info("Testing proxy connection...")
-            proxy = config.connection.proxy or config.connection.tor.address
-            if config.connection.tor:
+        if (arguments.proxy or arguments.proxies or arguments.tor) and (config.connection.proxy or config.connection.proxies or config.connection.tor):
+            proxy = None
+            if arguments.proxy:
+                proxy = config.connection.proxy
+            if arguments.tor and config.connection.tor:
                 t = Tor(config.connection.tor)
                 t.connect()
-            elif config.connection.proxies:
+                proxy = config.connection.tor.address
+            elif arguments.proxies and config.connection.proxies:
                 try:
                     async with aiof.open(config.connection.proxies, "r") as file:
                         proxy = random(await file.readline()).replace("\n", "")
@@ -60,6 +63,7 @@ class Attack:
                     return None
 
             async with aiohttp.ClientSession() as client:
+                log.info("Testing proxy connection...")
                 isWorking = await test_proxy_connection(client=client, proxy=proxy)
                 if not isWorking:
                     log.warning("Please check your proxy settings.")
@@ -75,10 +79,12 @@ class Attack:
 
         else:
             log.warning("No proxy or tor connection provided, using default connection. (\033[31;1mYOUR REAL IP WILL BE EXPOSED\033[0m)")
-            yn = input("\033[1mDo you want to continue? [\033[32N\033[0m/\033[31y\033[0m] \033[0m").lower() or "n"
+            yn = input("\033[1mDo you want to continue? [\033[32mN\033[0m/\033[31my\033[0m] \033[0m").lower() or "n"
             if yn != "y":
                 return None
-            log.warning("Using default connection, your real IP \033[31,1mwill be exposed.[\033[0m")
+            log.warning("Using default connection, which means: \033[31;1m>>>YOUR REAL IP WILL BE EXPOSED<<<.\033[0m")
+            log.warning("BOLDGiving you __H15__h seconds to give up, in case you regret it.")
+            await asyncio.sleep(15)
         if int(config.connection.limit_connections) > 100:
             log.warning("BOLDYou are using a high number of connections, it may cause issues with the target server and overload your CPU. (max recommended is 100)")
             yn = input("\033[1mDo you want to continue? [N/y] \033[0m") or "n"

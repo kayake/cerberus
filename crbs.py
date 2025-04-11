@@ -95,10 +95,10 @@ if __name__ == "__main__":
     try:
         asyncio.run(main(arguments=arguments))
     except KeyboardInterrupt as e:
-        log.error("\nUser interrupted.")
+        log.error("User interrupted.")
         sys.exit(0)
     except Exception as e:
-        log.error(f"\nAn error occurred: {str(e)}")
+        log.error(f"An error occurred: {str(e)}")
         sys.exit(1)
     finally:
         log.info("Exiting Cerberus.")
