@@ -30,9 +30,17 @@ def check_update():
     return updater.update()
 
 
-async def main():
+async def main(arguments):
+    try:
+        if arguments.command == "attack":
+            await Attack().run(arguments)
+        elif arguments.command == "plugin":
+            await Plugin().run(arguments)
+    except KeyboardInterrupt:
+        log.error("User interrupted.")
+
+if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog="cerberus", epilog="cerberus --verbose 3 attack -h")
-    
     commands = parser.add_subparsers(dest="command", title="Commands")
 
     attack = commands.add_parser("attack", help="Start an attack (Consider executing python3 crbs.py attack -h for attack options)")
@@ -86,14 +94,13 @@ async def main():
         log.info("Updated")
         sys.exit()
     try:
-        if arguments.command == "attack":
-            await Attack().run(arguments)
-        elif arguments.command == "plugin":
-            await Plugin().run(arguments)
-    except KeyboardInterrupt:
-        log.error("User interrupted.")
-
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        asyncio.run(main(arguments=arguments))
+    except KeyboardInterrupt as e:
+        log.error("\nUser interrupted.")
+        sys.exit(0)
+    except Exception as e:
+        log.error(f"\nAn error occurred: {str(e)}")
+        sys.exit(1)
+    finally:
+        log.info("Exiting Cerberus.")
+        sys.exit(0)

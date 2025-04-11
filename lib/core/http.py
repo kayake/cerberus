@@ -7,6 +7,7 @@ import ua_generator
 import logging
 from multiprocessing import Process
 from stem.control import Controller
+from stem import SocketError
 from typing import Any, List, Optional, Union
 from . import verify_response, HeadersReader
 from .process import PreProcessing
@@ -43,7 +44,7 @@ class Tor:
     Class to manage Tor connections.
     """
     def __init__(self, config: Any):
-        self.tor = config.connections.tor
+        self.tor = config
         self.controller: Optional[Controller] = None
 
     def connect(self) -> None:
@@ -51,11 +52,11 @@ class Tor:
         Connect to the Tor network.
         """
         try:
-            self.controller = Controller.from_port(port=self.tor.port)
+            self.controller = Controller.from_port(port=self.tor.control_port)
             self.controller.authenticate(password=self.tor.password)
-            print("Connected to ControlPort")
-        except (ConnectionRefusedError, ConnectionError) as err:
-            print(f"Error trying to connect to Tor:\n{err}")
+            log.debug("BOLDConnected to ControlPort")
+        except (ConnectionRefusedError, ConnectionError, SocketError) as err:
+            log.critical(f"Error trying to connect to Tor: {str(err)}")
 
     def renew_circuit(self) -> None:
         """
@@ -64,9 +65,9 @@ class Tor:
         if self.controller and self.controller.is_authenticated():
             try:
                 self.controller.signal("NEWNYM")
-                print("The new circuit was created successfully")
+                log.debug("BOLDThe new circuit was created successfully")
             except Exception as e:
-                print(f"Failed to create another circuit:\n{e}")
+                log.critical(f"Failed to create another circuit:\n{e}")
 
     def close(self) -> None:
         """
@@ -82,9 +83,7 @@ class Attack:
     def __init__(
             self, 
             config: str, 
-            proxy: Optional[str] = None, 
-            tor: Optional[bool] = False, 
-            proxies: Optional[bool] = False, 
+            proxy: str = None, 
             random_agent: Optional[bool] = False, 
             user_agent: Optional[str] = None,
             user_agent_list_file: Optional[str] = None,
@@ -102,28 +101,7 @@ class Attack:
             with aiof.open(user_agent_list_file, "r") as file:
                 user_agents = file.read().splitlines()
             self.headers['User-Agent'] = random.choice(user_agents)
-        self.proxy: Optional[Union[str, Proxy]] = None
-        p = Proxy(self.config)
-        if proxies:
-            self.proxy = p.get()
-        if proxy:
-            p.set(proxy)
-        t = Tor(self.config)
-        if tor:
-            self.proxy = t.tor.address
-            t.connect()
-        if self.proxy:
-            self.test_proxy_connection()
-
-    def test_proxy_connection(self) -> None:
-        """
-        Test the connection with the proxy.
-        """
-        try:
-            aiohttp.get("https://torproject.org", proxy=self.proxy)
-            log.info("BOLDThe connection with the proxy was successful")
-        except Exception as e:
-            log.critical(f"The proxy server is refusing connections.\nCheck the proxy settings to make sure that they are correct.\nContact your network administrator to make sure the proxy server is working;\n\n{e}")
+        self.proxy: Optional[str] = proxy
 
     async def load_wordlists(self) -> None:
         """
@@ -200,18 +178,16 @@ class MultipleWordlists(Attack):
             config: str, 
             number_of_threads: int = 5,
             proxy: Optional[str] = None, 
-            tor: Optional[bool] = False,
-            proxies: Optional[bool] = False,
             random_agent: Optional[bool] = True,
-            user_agent_list: Optional[str] = None
+            user_agent_list: Optional[str] = None,
+            output: Optional[str] = None
             ):
         super().__init__(
             config, 
             proxy=proxy,
-            tor=tor,
-            proxies=proxies,
             random_agent=random_agent,
-            user_agent_list_file=user_agent_list
+            user_agent_list_file=user_agent_list,
+            output=output
             )
         self.number_of_threads = number_of_threads
 
@@ -288,20 +264,22 @@ class MultipleWordlists(Attack):
             p[i].join()
         log.info("BOLDAttack finished")
         return None
-    """
-    async def __del__(self) -> None:
-        Close the Tor connection if it exists.
-        if self.proxy and isinstance(self.proxy, Tor):
-            self.proxy.close()
-        if self.proxy and isinstance(self.proxy, Proxy):
-            self.proxy.close()
-        if hasattr(self, 'controller'):
-            self.controller.close()
-        if hasattr(self, 'session'):
-            await self.session.close()
-        if hasattr(self, 'client'):
-            await self.client.close()
-        if hasattr(self, 'tasks'):
-            for task in self.tasks:
-                task.cancel()"
-        """
+
+async def test_proxy_connection(client: aiohttp.ClientSession, proxy: str) -> None | int:
+    try:
+        r: aiohttp.ClientResponse = await client.get("https://torproject.org", proxy=proxy)
+        return r.status
+    except aiohttp.ClientProxyConnectionError as e:
+        log.warning(f"The proxy server is refusing connections.\nCheck the proxy settings to make sure that they are correct.\nContact your network administrator to make sure the proxy server is working;\n\n{e}")
+        return None
+    except aiohttp.ClientError as e:
+        log.error(f"Client error: {e}")
+        return None
+    except asyncio.TimeoutError:
+        log.error("Timeout error")
+        return None
+    except Exception as e:
+        log.critical(f"Unexpected error: {e}")
+        return None
+
+    

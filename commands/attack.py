@@ -1,7 +1,11 @@
-from lib.core.http import Attack as HTTPAttack, MultipleWordlists
+from lib.core.http import Attack as HTTPAttack, MultipleWordlists, test_proxy_connection, Tor
 from lib.core import ReadYAMLFile
 
+import aiohttp
+import aiofiles as aiof
+
 import logging
+import random
 
 log = logging.getLogger(__name__)
 
@@ -9,9 +13,64 @@ class Attack:
     async def run(self, arguments) -> None:
         config = ReadYAMLFile(arguments.config or "configs/attack.yaml")
         if not config:
-            log.error(f"Invalid configuration file {config.file_path}")
+            log.error(f"Invalid configuration file {arguments.config}")
+            return None
+        proxy = None
+        if not config.body:
+            log.error("No body provided.")
+            return None
+        if not config.connection:
+            log.error("No connection settings provided.")
+            return None
+        if not config.credentials:
+            log.error("No credentials provided.")
+        if not config.body.url:
+            log.error("No URL provided.")
+            return None
+        if not config.body.method:
+            log.error("No method provided.")
+            return None
+        if not config.body.data:
+            log.error("No payload provided.")
+            return None
+        if not config.credentials.usernames and not config.credentials.passwords:
+            log.error("No usernames or passwords provided.")
             return None
 
+        if arguments.proxy and config.connection.proxy or config.connection.proxies or config.connection.tor:
+            log.info("Testing proxy connection...")
+            proxy = config.connection.proxy or config.connection.tor.address
+            if config.connection.tor:
+                t = Tor(config.connection.tor)
+                t.connect()
+            elif config.connection.proxies:
+                try:
+                    async with aiof.open(config.connection.proxies, "r") as file:
+                        proxy = random(await file.readline()).replace("\n", "")
+                except FileNotFoundError:
+                    log.critical(f"File {config.connection.proxies} not found.")
+                    return None
+
+            async with aiohttp.ClientSession() as client:
+                isWorking = await test_proxy_connection(client=client, proxy=proxy)
+                if not isWorking:
+                    log.warning("Please check your proxy settings.")
+                    yn = input("\033[1mDo you want to continue? [\033[32mN\033[0m/\033[31my\033[0m] \033[0m").lower() or "n"
+                    if yn != "y":
+                        return None
+                    proxy = None
+                else:
+                    if config.connection.tor:
+                        log.info(f"BOLDTor connection is working. Port listening on {proxy}")
+                    else:
+                        log.info(f"BOLDProxy connection is working: {proxy}")
+
+        else:
+            log.warning("No proxy or tor connection provided, using default connection. (\033[31;1mYOUR REAL IP WILL BE EXPOSED\033[0m)")
+            yn = input("\033[1mDo you want to continue? [\033[32N\033[0m/\033[31y\033[0m] \033[0m").lower() or "n"
+            if yn != "y":
+                return None
+            log.warning("Using default connection, your real IP \033[31,1mwill be exposed.[\033[0m")
         if int(config.connection.limit_connections) > 100:
             log.warning("BOLDYou are using a high number of connections, it may cause issues with the target server and overload your CPU. (max recommended is 100)")
             yn = input("\033[1mDo you want to continue? [N/y] \033[0m") or "n"
@@ -29,22 +88,20 @@ class Attack:
             bruteforce_with_mutiple_wordlists = MultipleWordlists(
                 config,
                 arguments.clusters,
-                arguments.proxy,
-                arguments.tor,
-                arguments.proxies,
+                proxy,
                 arguments.random_agent,
-                arguments.user_agent_list
+                arguments.user_agent_list,
+                output=arguments.output
             )
             return await bruteforce_with_mutiple_wordlists.start()
 
         bruteforce = HTTPAttack(
             config, 
-            arguments.proxy, 
-            arguments.tor, 
-            arguments.proxies, 
+            proxy, 
             arguments.random_agent, 
             arguments.user_agent,
-            arguments.user_agent_list
+            arguments.user_agent_list,
+            output=arguments.output
         )
         
         return await bruteforce.attack()
