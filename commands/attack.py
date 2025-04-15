@@ -45,6 +45,7 @@ class Attack:
             return None
         if config.response.success and config.response.fail:
             log.warning("BOLDYou provided both success and failure responses. This may cause issues.")
+            await asyncio.sleep(5)
 
         if arguments.proxy or arguments.proxies or arguments.tor:
             proxy = None
