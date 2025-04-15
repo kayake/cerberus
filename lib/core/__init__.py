@@ -324,7 +324,7 @@ class CheckUpdate:
         :return: Priority of the update.
         """
         current, type = self.current_version()
-        self.run_git(f"config --local --add cerberus.lastVersion {current}")
+        self.run_git(f"config --local --add cerberus.lastVersion {current}:{type}")
         if type == "dev":
             _, last_dev_tag = self.fetch_dev_status()
             if not last_dev_tag:
@@ -444,7 +444,7 @@ class CheckUpdate:
         log.info("Checking for updates and version")
         update_dev, dev = self.fetch_dev_status()
         update_master, stable = self.fetch_stable_status()
-        current, type = self.current_version()
+        current, type = self.run_git("config --local cerberus.lastVersion").split(":")
         grade = self.check_update_priority()
         log.info(f"BOLDVersion: {current} ({self.handle_update(grade)[0]})")
         if grade == 0:
