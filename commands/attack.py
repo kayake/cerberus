@@ -46,7 +46,7 @@ class Attack:
         if config.response.success and config.response.fail:
             log.warning("BOLDYou provided both success and failure responses. This may cause issues.")
 
-        if (arguments.proxy or arguments.proxies or arguments.tor) and (config.connection.proxy or config.connection.proxies or config.connection.tor):
+        if arguments.proxy or arguments.proxies or arguments.tor:
             proxy = None
             if arguments.proxy:
                 proxy = config.connection.proxy
@@ -73,7 +73,7 @@ class Attack:
                     proxy = None
                 else:
                     if config.connection.tor:
-                        log.info(f"BOLDTor connection is working. Port listening on {proxy}")
+                        log.info(f"BOLDTor connection is working ({proxy})")
                     else:
                         log.info(f"BOLDProxy connection is working: {proxy}")
 
@@ -85,6 +85,7 @@ class Attack:
             log.warning("Using default connection, which means: \033[31;1m>>>YOUR REAL IP WILL BE EXPOSED<<<.\033[0m")
             log.warning("BOLDGiving you __H15__h seconds to give up, in case you regret it.")
             await asyncio.sleep(15)
+
         if int(config.connection.limit_connections) > 100:
             log.warning("BOLDYou are using a high number of connections, it may cause issues with the target server and overload your CPU. (max recommended is 100)")
             yn = input("\033[1mDo you want to continue? [N/y] \033[0m") or "n"
