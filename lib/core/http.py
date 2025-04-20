@@ -5,7 +5,7 @@ import uvloop
 import random
 import ua_generator
 import logging
-from multiprocessing import Process
+from multiprocessing import Process, Lock
 from stem.control import Controller
 from stem import SocketError
 from typing import Any, List, Optional
@@ -87,15 +87,15 @@ class Attack:
         Load wordlists from the file.
         """
         log.info("Loading and preparing payloads")
-        self.payloads = await PreProcessing(self.config.credentials.passwords, self.config.credentials.usernames).make(self.config.body.data)
+        return await PreProcessing(self.config.credentials.passwords, self.config.credentials.usernames).make(self.config.body.data)
     
     async def attack(self, id: int | str = "MAIN"):
         """
         Send the payload to the target.
         """
-        await self.load_wordlists()
-        self.total = len(self.payloads)
-        log.info(f"BOLDPayloads were created with successful | __H{self.total}__h payloads")
+        payloads = await self.load_wordlists()
+        total = len(payloads)
+        log.info(f"BOLDPayloads were created with successful | __H{total}__h payloads")
         log.info("Starting the attack")
         sm = asyncio.Semaphore(int(self.config.connection.limit_connections))
         async with aiohttp.ClientSession(
@@ -108,13 +108,13 @@ class Attack:
             headers=self.headers or {}
         ) as client:
             tasks = [
-                asyncio.create_task(self.send(data=data, client=client, sm=sm, i=i, id=id))
-                for i, data in enumerate(self.payloads)
+                asyncio.create_task(self.send(data=data, client=client, sm=sm, i=i, id=id, total=total))
+                for i, data in enumerate(payloads)
             ]
 
             return await asyncio.gather(*tasks)
 
-    async def send(self, data: str, client: aiohttp.ClientSession, sm: asyncio.Semaphore, i: int, id) -> tuple[str, any]:
+    async def send(self, data: str, client: aiohttp.ClientSession, sm: asyncio.Semaphore, i: int, id, total: int = 0) -> tuple[str, any]:
         """
         Send a POST request with the given data.
         """
@@ -132,18 +132,18 @@ class Attack:
                     had_success: bool = await verify_response(expected_response=self.response, response=response)
 
                     if (self.config.response.success and had_success) or (self.config.response.fail and not had_success):
-                            log.info(f"BOLD[ATTEMPT] ({i + 1}/{self.total}) - \033[38;2;255;0;111m{id}\033[0m - \033[32;1m{data}\033[0m => \033[32;1mSUCCESS\033[0m : \033[38;5;214m{response.status}\033[0m")
+                            log.info(f"BOLD[ATTEMPT] ({i + 1}/{total}) - \033[38;2;255;0;111m{id}\033[0m - \033[32;1m{data}\033[0m => \033[32;1mSUCCESS\033[0m : \033[38;5;214m{response.status}\033[0m")
                             if self.output:
                                 async with aiof.open(self.output, "a") as file:
                                     await file.write(f"[+] {data} - {response.status_code}\n")
                             return None
-                    log.debug(f"[ATTEMPT] ({i + 1}/{self.total}) - {id} - {data} => \033[31;1mFAIL\033[0m : \033[38;5;214m{response.status}\033[0m")
+                    log.debug(f"[ATTEMPT] ({i + 1}/{total}) - {id} - {data} => \033[31;1mFAIL\033[0m : \033[38;5;214m{response.status}\033[0m")
             except aiohttp.ClientError as e:
-                log.debug(f"[RE-ATTEMPT] ({i + 1}/{self.total}) - {id} - {data} => \033[38;5;214mTRYING AGAIN\033[0m : \033[38;5;214m{e}\033[0m")
-                return await self.send(data, client, sm, i, id)
+                log.debug(f"[RE-ATTEMPT] ({i + 1}/{total}) - {id} - {data} => \033[38;5;214mTRYING AGAIN\033[0m : \033[38;5;214m{e}\033[0m")
+                return await self.send(data, client, sm, i, id, total)
             except asyncio.TimeoutError:
-                log.debug(f"[TIMEOUT] ({i + 1}/{self.total}) - {id} - {data} => \033[31;1mTIMEOUT\033[0m : \033[38;5;214m{self.config.connection.timeout}\033[0ms")
-                return await self.send(data, client, sm, i, id)
+                log.debug(f"[TIMEOUT] ({i + 1}/{total}) - {id} - {data} => \033[31;1mTIMEOUT\033[0m : \033[38;5;214m{self.config.connection.timeout}\033[0ms")
+                return await self.send(data, client, sm, i, id, total)
             except KeyboardInterrupt:
                 log.error("User interrupted.")
                 return None
@@ -190,9 +190,10 @@ class MultipleWordlists(Attack):
         """
         Get payloads for a specific wordlist ID.
         """
+        
         return await PreProcessing(wordlists[0][id], wordlists[1][id]).make(self.config.body.data)
 
-    async def attack(self, wordlists: List[List[str]], id: int) -> None:
+    async def attack(self, payloads: List[List[str]], id: int) -> None:
         """
         Perform an attack with payloads from a specific wordlist ID.
         """
@@ -205,26 +206,25 @@ class MultipleWordlists(Attack):
         headers=self.headers or {}
         ) as client:
             sm = asyncio.Semaphore(int(self.config.connection.limit_connections))
-            payloads = await self.get_payloads(id, wordlists)
-            log.info(f"BOLDPayloads were created with successful | __H{len(payloads)}__h payloads (__H#{id}__h)")
-            log.debug(f"Starting attack for wordlist __H{wordlists[0][id]}__h and __H{wordlists[1][id]}__h (#__H{id}__h)")
-            self.total = len(payloads)
+            total = len(payloads)
+            log.info(f"BOLDPayloads were created with successful | __H{total}__h payloads (__H#{id}__h)")
+            log.debug(f"Starting attack for wordlist for __H{total}__h payloads (#__H{id}__h)")
             
             tasks = [
-                asyncio.create_task(self.send(data=data, client=client, sm=sm, i=i, id=id))
+                asyncio.create_task(self.send(data=data, client=client, sm=sm, i=i, id=id, total=total))
                 for i, data in enumerate(payloads)
             ]
 
             return await asyncio.gather(*tasks)
         
 
-    def proccess(self, wordlists: List[List[str]], id: int) -> None:
+    def proccess(self, payloads: List[str], id: int) -> None:
         """
         Start the attack in a separate process.
         """
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        loop.run_until_complete(self.attack(wordlists=wordlists, id=id))
+        loop.run_until_complete(self.attack(payloads=payloads, id=id))
 
     async def start(self) -> None:
         """
@@ -233,14 +233,25 @@ class MultipleWordlists(Attack):
         number_of_proccess = len(self.config.credentials.passwords) if isinstance(self.config.credentials.passwords, list) else len(self.config.credentials.usernames)
         log.info(f"Getting the wordlists for __H{number_of_proccess}__h clients")
         wordlists = await self.get_wordlists(number_of_threads=number_of_proccess)
-        log.info(f"BOLDWordlists were created with success | __H{number_of_proccess}__h wordlists")
+        log.info(f"BOLDWordlists were read with success | __H{number_of_proccess}__h wordlists")
         log.info(f"BOLDStarting the attack with __H{number_of_proccess}__h clusters")
+
+        # creating payloads for each wordlist
+
+        payloads = [[]] * number_of_proccess
+
+        for i in range(number_of_proccess):
+            payloads[i] = await self.get_payloads(i, wordlists)
+            log.info(f"BOLDPayloads for core {i} were created with successful | __H{len(payloads[i])}__h payloads (__H#{i}__h)")
+
         p = []
         for i in range(number_of_proccess):
-            p.append(Process(target=self.proccess, args=(wordlists, i)))
-            p[i].start()
-        for i in range(number_of_proccess):
-            p[i].join()
+            p.append(Process(target=self.proccess, args=(payloads[i], i)))
+            
+        for proccess in p:
+            proccess.start()
+        for process in p:
+            p.join()
         log.info("BOLDAttack finished")
         return None
 

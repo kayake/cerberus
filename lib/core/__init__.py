@@ -249,7 +249,7 @@ class HeadersReader:
         """
         self.headers_path = Path.cwd() / headers_path
         if not self.headers_path.exists():
-            log.warning(f"Headers file not found: {self.headers_path}")
+            log.warning(f"Headers file not found: __H{self.headers_path}__h")
     
     def __read_headers(self) -> Dict[str, str]:
         """

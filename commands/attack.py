@@ -41,7 +41,7 @@ class Attack:
             log.error("No response provided.")
             return None
         if not config.response.success and not config.response.fail:
-            log.error("No success or failure response provided. Provide at least one of them.")
+            log.error("No success or failure response provided. Provide one of them.")
             return None
         if config.response.success and config.response.fail:
             log.warning("BOLDYou provided both success and failure responses. This may cause issues.")
@@ -84,8 +84,8 @@ class Attack:
             if yn != "y":
                 return None
             log.warning("Using default connection, which means: \033[31;1m>>>YOUR REAL IP WILL BE EXPOSED<<<.\033[0m")
-            log.warning("BOLDGiving you __H15__h seconds to give up, in case you regret it.")
-            await asyncio.sleep(15)
+            log.warning("BOLDGiving you __H5__h seconds to give up, in case you regret it.")
+            await asyncio.sleep(5)
 
         if int(config.connection.limit_connections) > 100:
             log.warning("BOLDYou are using a high number of connections, it may cause issues with the target server and overload your CPU. (max recommended is 100)")

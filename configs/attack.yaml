@@ -21,4 +21,4 @@ response:
 
 credentials:
   usernames: admin
-  passwords: [/usr/share/dict/brazilian, /usr/share/dict/american-english]
+  passwords: /usr/share/dict/brazilian 

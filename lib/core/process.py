@@ -2,6 +2,7 @@ import aiofiles as aiof
 import logging
 from pathlib import Path
 from typing import List
+import os
 
 log = logging.getLogger(__name__)
 
@@ -49,16 +50,20 @@ class PreProcessing(ReadWordlists):
         path = Path().cwd() / f".cache/saves/{wordlist}/{template}"
         try:
             async with aiof.open(path, "r") as file:
-                log.warning(f"BOLDTemplate already exists in __H{path}__h")
+                log.warning(f"BOLDPayloads for template __H{template}__h already exists in __H{path}__h")
                 y = input("Do you want to use it? [Y/n] ").lower() or "y"
                 if y == "n":
                     y = input("Do you want delete it and create a new one? [Y/n] ").lower() or "y"
                     if y == "y":
                         log.debug(f"BOLDDeleting __H{path}__h")
-                        await aiof.os.remove(path)
+                        os.remove(path)
                         log.debug(f"BOLD__H{path}__h deleted.")
                         return None
-                return await file.readlines()
+                payloads = [line.rstrip("\n") async for line in file]
+                if not payloads:
+                    log.warning(f"BOLDThe file __H{path}__h is empty.")
+                    return None
+                return payloads
         except FileNotFoundError:
             Path(path.parent).mkdir(parents=True, exist_ok=True)
             log.debug(f"BOLDCreating __H{path}__h")
@@ -84,9 +89,10 @@ class PreProcessing(ReadWordlists):
         wordlist = f"{wordlist1}+{wordlist2}".replace("/", "_")
         path = Path().cwd() / f".cache/saves/{wordlist}/{template}"
         Path(path.parent).mkdir(parents=True, exist_ok=True)
-        log.debug(f"BOLDCSaving to __H{path}__h")
+        log.debug(f"BOLDSaving to __H{path}__h")
         async with aiof.open(path, "w") as file:
-            await file.writelines(payloads)
+            for payload in payloads:
+                await file.write(payload + "\n")
             log.info(f"BOLDPayloads (__H{len(payloads)}__h) were saved in __H{path}__h.")
 
     async def make(self, template: str) -> List[str]:
@@ -114,5 +120,5 @@ class PreProcessing(ReadWordlists):
         
         log.debug("BOLDTasks created with success.")
         if not save:
-            self.save(self.usernames_path, self.passwords_path, template, tasks)
+            await self.save(self.usernames_path, self.passwords_path, template, tasks)
         return tasks
