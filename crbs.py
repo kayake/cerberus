@@ -2,7 +2,6 @@ import argparse
 import os
 import logging
 import sys
-from pathlib import Path
 from lib.core import CustomFormatter
 import asyncio
 
