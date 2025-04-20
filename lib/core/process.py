@@ -1,8 +1,6 @@
 import aiofiles as aiof
 import logging
-from pathlib import Path
 from typing import List
-import os
 
 from lib.core.database import SavePayloads
 
@@ -25,7 +23,7 @@ class ReadWordlists:
                 log.debug(f"Starting to read __H{file.name}__h")
                 return await file.readlines()
         except FileNotFoundError:
-            log.debug(f"BOLDString: {path}")
+            log.debug(f"BOLDString: __H{path}__h")
             return [path]
 
 class PreProcessing(ReadWordlists):

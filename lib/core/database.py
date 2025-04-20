@@ -1,6 +1,5 @@
 import pathlib
 import plyvel
-import pickle
 import json
 
 PATH = ".cache/"
