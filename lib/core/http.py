@@ -107,6 +107,12 @@ class Attack:
             timeout=aiohttp.ClientTimeout(total=self.config.connection.timeout),
             headers=self.headers or {}
         ) as client:
+            log.info("BOLDEverything is ready")
+            y = input("Do you want to proccedd with the attack? [Y/n] ").lower() or "y"
+            if "n" in y:
+                log.info("BOLDAttack cancelled")
+                return None
+            log.info(f"BOLDStarting the attack with __H{total}__h payloads")
             tasks = [
                 asyncio.create_task(self.send(data=data, client=client, sm=sm, i=i, id=id, total=total))
                 for i, data in enumerate(payloads)
@@ -239,6 +245,12 @@ class MultipleWordlists(Attack):
         # creating payloads for each wordlist
 
         payloads = [[]] * number_of_proccess
+
+        log.info("BOLDEverything is ready")
+        y = input("Do you want to proccedd with the attack? [Y/n] ").lower() or "y"
+        if "n" in y:
+            log.info("BOLDAttack cancelled")
+            return None
 
         for i in range(number_of_proccess):
             payloads[i] = await self.get_payloads(i, wordlists)

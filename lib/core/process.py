@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import List
 import os
 
+from lib.core.database import SavePayloads
+
 log = logging.getLogger(__name__)
 
 class ReadWordlists:
@@ -33,6 +35,7 @@ class PreProcessing(ReadWordlists):
     def __init__(self, passwords_path: str, usernames_path: str):
         self.passwords_path = passwords_path
         self.usernames_path = usernames_path
+        self.database = SavePayloads()
 
     def _replace(self, template: str, username: str, password: str) -> str:
         """
@@ -41,68 +44,40 @@ class PreProcessing(ReadWordlists):
         return template.replace("^USER^", username).replace("^PASS^", password).replace("\n", "")
 
 
-    async def get_save(self, wordlist1: str, wordlist2: str, template: str) -> List[str] | None:
+    def get_save(self, wordlist1: str, wordlist2: str, template: str) -> List[str] | None:
         """
         Read a file and return its contents as a list of strings.
         If the file is not found, return None.
         """
         wordlist = f"{wordlist1}+{wordlist2}".replace("/", "_")
-        path = Path().cwd() / f".cache/saves/{wordlist}/{template}"
-        try:
-            async with aiof.open(path, "r") as file:
-                log.warning(f"BOLDPayloads for template __H{template}__h already exists in __H{path}__h")
-                y = input("Do you want to use it? [Y/n] ").lower() or "y"
-                if y == "n":
-                    y = input("Do you want delete it and create a new one? [Y/n] ").lower() or "y"
-                    if y == "y":
-                        log.debug(f"BOLDDeleting __H{path}__h")
-                        os.remove(path)
-                        log.debug(f"BOLD__H{path}__h deleted.")
-                        return None
-                payloads = [line.rstrip("\n") async for line in file]
-                if not payloads:
-                    log.warning(f"BOLDThe file __H{path}__h is empty.")
+        payloads = self.database.get(template, wordlist)
+        if payloads:
+            log.warning(f"BOLDPayloads for template __H{template}__h already exists in __H{self.database.save_path}__h")
+            y = input("Do you want to use it? [Y/n] ").lower() or "y"
+            if y == "n":
+                y = input("Do you want delete it and create a new one? [Y/n] ").lower() or "y"
+                if y == "y":
+                    log.debug(f"BOLDDeleting __H{wordlist}__h")
+                    success = self.database.delete(template)
+                    if success:
+                        log.debug(f"BOLD__H{wordlist}__h deleted.")
                     return None
-                return payloads
-        except FileNotFoundError:
-            Path(path.parent).mkdir(parents=True, exist_ok=True)
-            log.debug(f"BOLDCreating __H{path}__h")
-            async with aiof.open(path, "w") as file:
-                log.debug(f"BOLD__H{path}__h created.")
-                return None
-        except IsADirectoryError:
-            log.debug(f"BOLDThe argument __H{path}__h is a directory, not a file.")
-            return 3
-        except PermissionError:
-            log.debug(f"BOLDPermission denied to access __H{path}__h")
-            return 3
-        except Exception as e:
-            log.debug(f"BOLDAn unexpected error occurred: {e}")
-            return 3
-        finally:
-            log.debug(f"BOLD__H{path}__h closed.")
+            return payloads
     
-    async def save(self, wordlist1: str, wordlist2: str, template: str, payloads: List[str]) -> None:
+    def save(self, wordlist1: str, wordlist2: str, template: str, payloads: List[str]) -> None:
         """
         Save the generated payloads to a file.
         """
         wordlist = f"{wordlist1}+{wordlist2}".replace("/", "_")
-        path = Path().cwd() / f".cache/saves/{wordlist}/{template}"
-        Path(path.parent).mkdir(parents=True, exist_ok=True)
-        log.debug(f"BOLDSaving to __H{path}__h")
-        async with aiof.open(path, "w") as file:
-            for payload in payloads:
-                await file.write(payload + "\n")
-            log.info(f"BOLDPayloads (__H{len(payloads)}__h) were saved in __H{path}__h.")
+        self.database.set_save(template, wordlist, payloads)
+        log.info(f"BOLDPayloads (__H{len(payloads)}__h) were saved in __H{self.database.save_path}__h.")
 
     async def make(self, template: str) -> List[str]:
         """
         Create a list of payloads by replacing placeholders in the template with all combinations of usernames and passwords.
         """
-        save = await self.get_save(self.usernames_path, self.passwords_path, template)
-        if save == 3:
-            return None
-        elif save:
+        save = self.get_save(self.usernames_path, self.passwords_path, template)
+        if save:
             log.debug(f"BOLDDone.")
             log.debug(f"BOLDGot __H{len(save)}__h payloads")
             return save
@@ -119,6 +94,6 @@ class PreProcessing(ReadWordlists):
         ]
         
         log.debug("BOLDTasks created with success.")
-        if not save:
-            await self.save(self.usernames_path, self.passwords_path, template, tasks)
+        
+        self.save(self.usernames_path, self.passwords_path, template, tasks)
         return tasks

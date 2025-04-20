@@ -9,3 +9,4 @@ packaging
 logging
 pathlib
 argparse
+plyvel
