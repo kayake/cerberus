@@ -120,7 +120,7 @@ class Attack:
 
             return await asyncio.gather(*tasks)
 
-    async def send(self, data: str, client: aiohttp.ClientSession, sm: asyncio.Semaphore, i: int, id, total: int = 0) -> tuple[str, any]:
+    async def send(self, data: str, client: aiohttp.ClientSession, sm: asyncio.Semaphore, i: int, id, total: int = 0) -> tuple[str, str, int] | None:
         """
         Send a POST request with the given data.
         """
@@ -131,8 +131,10 @@ class Attack:
                     method=self.config.body.method, 
                     data=data,
                     proxy=self.proxy,
-                    allow_redirects=bool(self.config.connection.allow_redirects),
-                    verify_ssl=self.config.connection.verify_ssl,
+                    allow_redirects=bool(self.config.connection.allow_redirects or True ),
+                    verify_ssl=self.config.connection.verify_ssl or True,
+                    headers=self.headers or {},
+                    timeout=aiohttp.ClientTimeout(total=self.config.connection.timeout or 50),
                 ) as response:
                         
                     had_success: bool = await verify_response(expected_response=self.response, response=response)
@@ -142,14 +144,14 @@ class Attack:
                             if self.output:
                                 async with aiof.open(self.output, "a") as file:
                                     await file.write(f"[+] {data} - {response.status_code}\n")
-                            return None
+                            return data, response.status, id
                     log.debug(f"[ATTEMPT] ({i + 1}/{total}) - {id} - {data} => \033[31;1mFAIL\033[0m : \033[38;5;214m{response.status}\033[0m")
             except aiohttp.ClientError as e:
                 log.debug(f"[RE-ATTEMPT] ({i + 1}/{total}) - {id} - {data} => \033[38;5;214mTRYING AGAIN\033[0m : \033[38;5;214m{e}\033[0m")
-                return await self.send(data, client, sm, i, id, total)
+                await self.send(data, client, sm, i, id, total)
             except asyncio.TimeoutError:
                 log.debug(f"[TIMEOUT] ({i + 1}/{total}) - {id} - {data} => \033[31;1mTIMEOUT\033[0m : \033[38;5;214m{self.config.connection.timeout}\033[0ms")
-                return await self.send(data, client, sm, i, id, total)
+                await self.send(data, client, sm, i, id, total)
             except KeyboardInterrupt:
                 log.error("User interrupted.")
                 return None
@@ -208,10 +210,10 @@ class MultipleWordlists(Attack):
             verify_ssl=self.config.connection.verify_ssl,
             loop=asyncio.get_event_loop()
         ),
-        timeout=aiohttp.ClientTimeout(total=self.config.connection.timeout),
+        timeout=aiohttp.ClientTimeout(total=self.config.connection.timeout or 50),
         headers=self.headers or {}
         ) as client:
-            sm = asyncio.Semaphore(int(self.config.connection.limit_connections))
+            sm = asyncio.Semaphore(int(self.config.connection.limit_connections or 100))
             total = len(payloads)
             log.info(f"BOLDPayloads were created with successful | __H{total}__h payloads (__H#{id}__h)")
             log.debug(f"Starting attack for wordlist for __H{total}__h payloads (#__H{id}__h)")

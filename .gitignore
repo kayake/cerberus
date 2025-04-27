@@ -4,5 +4,7 @@
 .cache/**
 configs/**
 configs/*
+wordlists/**
+wordlists/*
 poetry.lock
 configs/attack.yaml

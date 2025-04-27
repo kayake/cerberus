@@ -63,7 +63,7 @@ if __name__ == "__main__":
     plugin.add_argument("--load", type=str, help="Load a plugin", required=False)
     plugin.add_argument("--list", action="store_true", help="List all loaded plugins", required=False)
     plugin.add_argument("--use", type=str, help="Execute a plugin", required=False)
-
+    plugin.add_argument("-args", "--arguments", type=str, help="Arguments for the plugin", required=False, nargs=argparse.REMAINDER)
 
     version = parser.add_argument_group("Version options")
     version.add_argument("--version", action="store_true", help="Show the version", required=False)

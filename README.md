@@ -9,14 +9,21 @@ Cerberus provides customizable plugin functionality, proxy support (including st
 - [Disclaimer](#disclaimer)
 - [Contributing](#contributing)
 - [Installation](#installation)
+  - [Installtion from The Development Branch](#installing-from-the-development-branch)
 - [Usage](#usage)
 - [Configuration](#configuration)
   - [Setting Up Proxies and Tor](#setting-up-proxies-and-tor)
-    - [Setting Up on Linux](#on-linux)
-    - [Setting Up on Windows](#on-windows)
+    - [Example Configuration File](#example-configuration-file)
+    - [Setting up Control Port and Password](#setting-up-control-port-and-password)
+      - [Setting Up on Linux](#on-linux)
+      - [Setting Up on Windows](#on-windows)
 - [Starting an Attack](#starting-an-attack)
+  - [Starting The Attack](#starting-the-attack)
+    - [Example Configuration File](#example-configuration-file-1)
   - [How to Use Multiple Wordlists Attack](#how-to-use-multiple-wordlists-attack)
 - [Setting Up Plugins](#setting-up-plugins)
+  - [Example Plugin](#example-plugin)
+  - [Running Plugin](#running-the-plugin)
 - [Help](#help)
 
 ---
@@ -47,6 +54,16 @@ git clone https://github.com/kayake/cerberus.git && cd cerberus && pip install -
 <sub>
 🅘 If your PIP version is 23.x.x, please review the documentation on <a href="https://github.com/kayake/cerberus/issues/2">Python package installation failure (PIP: >= 23.0.0)</a>.
 </sub>
+
+### Installing from the Development Branch
+To install Cerberus from the development branch, run the following command:
+
+```bash
+git clone https://github.com/kayake/cerberus.git --branch dev --single-branch && cd cerberus && pip install -r requirements.txt
+```
+
+> [!WARNING]
+> The development branch is intended for testing purposes only.
 
 ---
 
@@ -224,13 +241,8 @@ cerberus --verbose 3 plugin --list
 ==================================================
 test/hello.world.py - My First Plugin!
 ==================================================
-cerberus --verbose 3 plugin --use test/hello.world.py
-cerberus test(test/hello.world.py) > a ay au
-Hello world!
-a
-ay
-au
-cerberus test(test/hello.world.py) >  
+cerberus --verbose 3 plugin --use test/hello.world.py -args="--foo foo"
+  
 ```
 
 ---
@@ -241,22 +253,22 @@ cerberus test(test/hello.world.py) >
 usage: cerberus [-h] [--version] [--update] [--verbose LEVEL] {attack,plugin} ...
 
 options:
-    -h, --help            Show this help message and exit
+  -h, --help            show this help message and exit
 
 Commands:
-    {attack,plugin}
-        attack              Start an attack (Consider executing python3 crbs.py attack -h for attack options)
-        plugin              Use a plugin in 'lib/plugins/'
+  {attack,plugin}
+    attack              Start an attack (Consider executing python3 crbs.py attack -h for attack options)
+    plugin              Use a plugin in 'lib/plugins/'
 
 Version options:
-    --version             Show the version
+  --version             Show the version
 
 Update options:
-    --update, -u          Update Cerberus
+  --update, -u          Update Cerberus
 
 Others:
-    --verbose LEVEL, -v LEVEL
-                                                Set debug level
+  --verbose LEVEL, -v LEVEL
+                        Set debug level
 
-cerberus --verbose 3 --attack -h
+cerberus --verbose 3 attack -h
 ```
