@@ -1,6 +1,10 @@
 .idea
 **/__pycache__/
 
-.cache/logs/.command
-.cache/saves/test.json
+.cache/**
+configs/**
+configs/*
+wordlists/**
+wordlists/*
 poetry.lock
+configs/attack.yaml

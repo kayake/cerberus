@@ -1,0 +1,24 @@
+body:
+  url: https://google.com/
+  method: POST
+  headers: asdf
+  data: username=^USER^&password=^PASS^
+
+connection:
+  timeout: 50
+  verify_ssl: true
+  limit_connections: 100
+  proxy: http://username:password@127.0.0.1:9273
+  proxies: /path/to/proxies.txt
+  tor:
+    control_port: 9051
+    address: socks5://127.0.0.1:9050
+    password: my_enc_password
+
+response:
+  success: ~
+  fail: 405
+
+credentials:
+  usernames: admin
+  passwords: /usr/share/dict/brazilian 
